@@ -1,0 +1,26 @@
+﻿@{
+    ViewData["Title"] = "Add Medication";
+}
+
+<div class="simple-card">
+    <h1 class="page-title">Add Medication</h1>
+
+    <label>Medication Name</label>
+    <input class="form-input" type="text" placeholder="Enter medication name" />
+
+    <label>Dosage</label>
+    <input class="form-input" type="text" placeholder="Enter dosage" />
+
+    <label>Frequency</label>
+    <select class="form-select">
+        <option>Once daily</option>
+        <option>Twice daily</option>
+        <option>Every 8 hours</option>
+        <option>As needed</option>
+    </select>
+
+    <label>Notes</label>
+    <textarea class="form-textarea" rows="4" placeholder="Optional notes"></textarea>
+
+    <button class="button-main" type="button">Save Medication</button>
+</div>

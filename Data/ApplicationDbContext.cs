@@ -64,17 +64,17 @@ namespace Medication_Tracker.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Notes).HasMaxLength(500);
-                
+
                 // Foreign keys
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.MedicationLogs)
                     .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.NoAction);
 
                 entity.HasOne(e => e.Medication)
                     .WithMany(m => m.MedicationLogs)
                     .HasForeignKey(e => e.MedicationId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.NoAction);
 
                 entity.HasOne(e => e.MedicationSchedule)
                     .WithMany(s => s.MedicationLogs)

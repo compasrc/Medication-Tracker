@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Medication_Tracker.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260330175914_InitialCreate")]
+    [Migration("20260330181516_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -199,7 +199,7 @@ namespace Medication_Tracker.Migrations
                     b.HasOne("Medication_Tracker.Models.Medication", "Medication")
                         .WithMany("MedicationLogs")
                         .HasForeignKey("MedicationId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("Medication_Tracker.Models.MedicationSchedule", "MedicationSchedule")
@@ -211,7 +211,7 @@ namespace Medication_Tracker.Migrations
                     b.HasOne("Medication_Tracker.Models.User", "User")
                         .WithMany("MedicationLogs")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Medication");

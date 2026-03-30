@@ -196,7 +196,7 @@ namespace Medication_Tracker.Migrations
                     b.HasOne("Medication_Tracker.Models.Medication", "Medication")
                         .WithMany("MedicationLogs")
                         .HasForeignKey("MedicationId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("Medication_Tracker.Models.MedicationSchedule", "MedicationSchedule")
@@ -208,7 +208,7 @@ namespace Medication_Tracker.Migrations
                     b.HasOne("Medication_Tracker.Models.User", "User")
                         .WithMany("MedicationLogs")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Medication");

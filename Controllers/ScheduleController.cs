@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+
 namespace Medication_Tracker.Controllers
 {
-    public class ScheduleController : Controller
+    public class Schedule : Controller
     {
         public int ID {get; set;}
         public int UserID {get; set;}

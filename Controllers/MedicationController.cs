@@ -33,6 +33,5 @@ namespace Medication_Tracker.Controllers
         {
             return View();
         }
-
     }
 }

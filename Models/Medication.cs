@@ -15,5 +15,7 @@ namespace Medication_Tracker.Models
         // Navigation property
         public ICollection<MedicationSchedule> MedicationSchedules { get; set; } = new List<MedicationSchedule>();
         public ICollection<MedicationLog> MedicationLogs { get; set; } = new List<MedicationLog>();
-    }
+
+      
+	}
 }

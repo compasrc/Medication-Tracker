@@ -1,44 +1,60 @@
 using Medication_Tracker.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Identity.Client;
 using System.Diagnostics;
+using Medication_Tracker.Data;
+
 
 namespace Medication_Tracker.Controllers
 {
     public class LoginController : Controller
     {
-        public int ID {get; set;}
-        public string Username {get; set;} = string.Empty;
-        public string Password {get; set;} = string.Empty;
-        
-       public class HomeController : Controller
-    {
-        public IActionResult Login()
-        {
-            return View();
-        }
 
-        [HttpPost]
-        public async Task<IActionResult> Login(LoginController model)
+        public class HomeController : Controller
         {
-            if (ModelState.IsValid)
+			private readonly ApplicationDbContext context; //database context for accessing the database
+			public HomeController(ApplicationDbContext context)
+			{
+				this.context = context;
+			}
+			public IActionResult LoginDashBoard()
             {
-                // Here you would typically check the username and password against a database
-                // For demonstration purposes, we'll just check if they are not empty
-                if (!string.IsNullOrEmpty(model.Username) && !string.IsNullOrEmpty(model.Password))
-                {
-                    // If the login is successful, redirect to a different page (e.g., dashboard)
-                    return RedirectToAction("Dashboard");
-                }
-                else
-                {
-                    // If the login fails, add an error message to the model state
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                }
+                return View();
             }
 
-            // If we got this far, something failed; redisplay the form
-            return View(model);
+			[HttpPost]
+            public async Task<IActionResult> Login(User user)
+            { 
+				if (ModelState.IsValid)
+                {
+                    if (!string.IsNullOrEmpty(user.Email) && !string.IsNullOrWhiteSpace(user.PasswordHash))
+                    {
+                        return RedirectToAction("Dashboard");
+                    }
+                    else
+                    {
+                        // If the login fails, add an error message to the model state
+                        ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    }
+                }
+                return View();
+            }
+
+            public IActionResult Logout()
+            {
+                return RedirectToAction("LoginDashBoard", "Login"); // Redirect to the login page
+			}
+
+            public IActionResult PasswordRecoveryControl(Medication User, string Email)
+            {
+                var user = context.Users.FirstOrDefault(u => u.Email == Email);
+			    return RedirectToAction("PasswordRecovery", "PasswordRecovery");
+			}
+
+			public IActionResult NotSignedUp()
+            {
+                return RedirectToAction("SignUpUser", "SignUp");
+            }
         }
-    }
 }
 }

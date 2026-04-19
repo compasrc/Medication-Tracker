@@ -1,0 +1,22 @@
+﻿@model Medication_Tracker.Models.Medication
+
+@{
+    ViewData["Title"] = "Delete Medication";
+}
+
+<div class="simple-card">
+    <h1 class="page-title">Delete Medication</h1>
+
+    <p>Are you sure you want to delete this medication?</p>
+
+    <p><strong>@Model.Name</strong> - @Model.Dosage</p>
+    <p>Frequency: @Model.Frequency</p>
+
+    <form asp-action="Delete" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <button type="submit" class="button-main">Yes, Delete</button>
+        <a asp-action="Index">Cancel</a>
+    </form>
+</div>

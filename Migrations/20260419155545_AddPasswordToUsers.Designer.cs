@@ -4,6 +4,7 @@ using Medication_Tracker.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Medication_Tracker.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260419155545_AddPasswordToUsers")]
+    partial class AddPasswordToUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -53,20 +56,10 @@ namespace Medication_Tracker.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("TimeToTake")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Medications");
                 });
@@ -79,7 +72,7 @@ namespace Medication_Tracker.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("DateTaken")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("MedicationId")
@@ -89,16 +82,17 @@ namespace Medication_Tracker.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Notes")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("TakenAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("WasTaken")
+                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 
@@ -158,7 +152,7 @@ namespace Medication_Tracker.Migrations
                     b.ToTable("MedicationSchedules");
                 });
 
-            modelBuilder.Entity("Medication_Tracker.Models.User", b =>
+            modelBuilder.Entity("User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -196,31 +190,12 @@ namespace Medication_Tracker.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.HasIndex("Username")
-                        .IsUnique();
-
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("Medication_Tracker.Models.Medication", b =>
-                {
-                    b.HasOne("Medication_Tracker.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Medication_Tracker.Models.MedicationLog", b =>
@@ -237,7 +212,7 @@ namespace Medication_Tracker.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Medication_Tracker.Models.User", "User")
+                    b.HasOne("User", "User")
                         .WithMany("MedicationLogs")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
@@ -258,7 +233,7 @@ namespace Medication_Tracker.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Medication_Tracker.Models.User", "User")
+                    b.HasOne("User", "User")
                         .WithMany("MedicationSchedules")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -281,7 +256,7 @@ namespace Medication_Tracker.Migrations
                     b.Navigation("MedicationLogs");
                 });
 
-            modelBuilder.Entity("Medication_Tracker.Models.User", b =>
+            modelBuilder.Entity("User", b =>
                 {
                     b.Navigation("MedicationLogs");
 

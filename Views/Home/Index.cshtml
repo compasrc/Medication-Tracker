@@ -1,20 +1,107 @@
-﻿@{
+﻿@using Medication_Tracker.Models
+
+@{
     ViewData["Title"] = "Home";
+    var medications = ViewBag.Medications as List<Medication>;
+    var schedules = ViewBag.ScheduleTimes as List<MedicationSchedule>;
+    var nextSchedule = ViewBag.NextSchedule as MedicationSchedule;
+    var totalMedications = ViewBag.TotalMedications ?? 0;
+    var takenCount = ViewBag.TakenCount ?? 0;
+    var missedCount = ViewBag.MissedCount ?? 0;
+    var remainingCount = ViewBag.RemainingCount ?? 0;
 }
 
 <div class="simple-card">
     <h1 class="page-title">Welcome to Medication Tracker</h1>
-    <p class="page-subtitle">
-        Keep track of medications, schedules, and possible interactions in one place.
-    </p>
+    <p>Keep track of medications, schedules, and possible interactions in one place.</p>
 
-    <a class="button-main" asp-controller="Medication" asp-action="Create">Add Medication</a>
+    <p>
+        <a asp-controller="Medication" asp-action="Create">Add Medication</a>
+    </p>
 </div>
 
-<div class="simple-card">
-    <h2>Today's Summary</h2>
-    <p><strong>Taken:</strong> 0</p>
-    <p><strong>Missed:</strong> 0</p>
-    <p><strong>Remaining:</strong> 4</p>
-    <p><strong>Adherence:</strong> 100%</p>
+<div class="simple-card" style="margin-top:30px;">
+    <h2 class="page-title">Today's Summary</h2>
+
+    <p><strong>Total Medications:</strong> @totalMedications</p>
+    <p><strong>Taken Today:</strong> @takenCount</p>
+    <p><strong>Not Taken Today:</strong> @missedCount</p>
+    <p><strong>Remaining Today:</strong> @remainingCount</p>
+
+    @if (nextSchedule != null && medications != null)
+    {
+        var nextMedication = medications.FirstOrDefault(m => m.Id == nextSchedule.MedicationId);
+
+        if (nextMedication != null)
+        {
+            <hr />
+            <h3>Next Medication</h3>
+            <p><strong>@nextMedication.Name</strong> - @nextMedication.Dosage</p>
+            <p>Frequency: @nextMedication.Frequency</p>
+            <p>Time: @nextSchedule.ScheduleTime</p>
+
+            @if (!string.IsNullOrWhiteSpace(nextMedication.Description))
+            {
+                <p>Notes: @nextMedication.Description</p>
+            }
+
+            <form asp-action="LogMedication" method="post" style="display:inline-block; margin-right:10px;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="medicationId" value="@nextMedication.Id" />
+                <input type="hidden" name="scheduleId" value="@nextSchedule.Id" />
+                <input type="hidden" name="status" value="Taken" />
+                <button type="submit" class="button-main">Taken</button>
+            </form>
+
+            <form asp-action="LogMedication" method="post" style="display:inline-block;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="medicationId" value="@nextMedication.Id" />
+                <input type="hidden" name="scheduleId" value="@nextSchedule.Id" />
+                <input type="hidden" name="status" value="Not Taken" />
+                <button type="submit" class="button-main">Not Taken</button>
+            </form>
+        }
+    }
+    else
+    {
+        <hr />
+        <p>No more upcoming medications for today.</p>
+    }
+
+    @if (medications != null && medications.Any())
+    {
+        <hr />
+        <h3>Your Medication List </h3>
+        <ul>
+            @foreach (var medication in medications)
+            {
+                var medTimes = schedules?
+                    .Where(s => s.MedicationId == medication.Id)
+                    .Select(s => s.ScheduleTime)
+                    .ToList();
+
+                <li style="margin-bottom:15px;">
+                    <strong>@medication.Name</strong> - @medication.Dosage
+                    <br />
+                    Frequency: @medication.Frequency
+
+                    @if (medTimes != null && medTimes.Any())
+                    {
+                        <br />
+                        <span>Times: @string.Join(", ", medTimes)</span>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(medication.Description))
+                    {
+                        <br />
+                        <span>Notes: @medication.Description</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>No medications added yet.</p>
+    }
 </div>

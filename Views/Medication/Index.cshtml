@@ -1,13 +1,52 @@
-﻿@{
-    ViewData["Title"] = "Medications"; 
+﻿@model List<Medication_Tracker.Models.Medication>
+@using Medication_Tracker.Models
+
+@{
+    ViewData["Title"] = "Medications";
+    var schedules = ViewBag.ScheduleTimes as List<MedicationSchedule>;
 }
 
 <div class="simple-card">
     <h1 class="page-title">Medications</h1>
-    <p class ="page-subtitle">Here is your current medication list: </p>
+    <p>Here is your current medication list:</p>
 
-<ul> 
-    <li>Medication #1 - 10 mg </li>
-    <li>Medication #2 - 5 mg</li>
-</ul>
+    @if (Model == null || !Model.Any())
+    {
+        <p>No medications found.</p>
+    }
+    else
+    {
+        <ul style="list-style: none; padding-left: 0;">
+            @foreach (var medication in Model)
+            {
+                var medTimes = schedules?
+                    .Where(s => s.MedicationId == medication.Id)
+                    .Select(s => s.ScheduleTime)
+                    .ToList();
+
+                <li style="margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 12px;">
+                    <strong>@medication.Name</strong> - @medication.Dosage
+                    <br />
+                    Frequency: @medication.Frequency
+
+                    @if (medTimes != null && medTimes.Any())
+                    {
+                        <br />
+                        <span>Times: @string.Join(", ", medTimes)</span>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(medication.Description))
+                    {
+                        <br />
+                        <span>Notes: @medication.Description</span>
+                    }
+
+                    <br /><br />
+                    <a asp-action="Edit" asp-route-id="@medication.Id">Edit</a>
+                    |
+                    <a asp-action="Delete" asp-route-id="@medication.Id">Delete</a>
+                </li>
+            }
+        </ul>
+    }
 </div>

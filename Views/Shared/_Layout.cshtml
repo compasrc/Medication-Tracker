@@ -12,13 +12,27 @@
         <div class="container nav-wrapper">
             <a class="logo" asp-controller="Home" asp-action="Index">MedTracker</a>
 
-            <nav class="main-nav">
-                <a asp-controller="Home" asp-action="Index">Home</a>
-                <a asp-controller="Home" asp-action="Login">Login</a>
-                <a asp-controller="Home" asp-action="SignUp">SignUp</a>
-                <a asp-controller="Medication" asp-action="Index">Medications</a>
-                <a asp-controller="Medication" asp-action="Create">Add Medication</a>
-                <a asp-controller="Medication" asp-action="Interactions">Interactions</a>
+            @using Microsoft.AspNetCore.Http
+
+<nav class="main-nav">
+                @if (Context.Session.GetString("User") != null)
+                {
+                    <span style="margin-right:10px;">
+                        Welcome, @Context.Session.GetString("User")
+                    </span>
+ 
+                    <a asp-controller="Home" asp-action="Index">Home</a>
+                    <a asp-controller="Medication" asp-action="Index">Medications</a>
+                    <a asp-controller="Medication" asp-action="Create">Add Medication</a>
+                    <a asp-controller="Medication" asp-action="Interactions">Interactions</a>
+
+                    <a asp-controller="Login" asp-action="Logout">Logout</a>
+                }
+                else
+                {
+                    <a asp-controller="Login" asp-action="Index">Login</a>
+                    <a asp-controller="SignUp" asp-action="Index">Sign Up</a>
+                }
             </nav>
         </div>
     </header>

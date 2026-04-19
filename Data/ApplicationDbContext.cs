@@ -5,6 +5,10 @@ namespace Medication_Tracker.Data
 {
     public class ApplicationDbContext : DbContext
     {
+        public ApplicationDbContext()
+        {
+        }
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
@@ -23,11 +27,20 @@ namespace Medication_Tracker.Data
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id);
+
                 entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
+
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.PhoneNumber).HasMaxLength(20);
                 entity.HasIndex(e => e.Email).IsUnique();
+
+                entity.Property(e => e.Username)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.HasIndex(e => e.Username).IsUnique();
+
+                entity.Property(e => e.PhoneNumber).HasMaxLength(20);
             });
 
             // Configure Medication entity
@@ -38,6 +51,12 @@ namespace Medication_Tracker.Data
                 entity.Property(e => e.Description).HasMaxLength(500);
                 entity.Property(e => e.Dosage).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Frequency).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.TimeToTake).HasMaxLength(20);
+
+                entity.HasOne(m => m.User)
+                    .WithMany()
+                    .HasForeignKey(m => m.UserId)
+                    .OnDelete(DeleteBehavior.NoAction);
             });
 
             // Configure MedicationSchedule entity
@@ -46,8 +65,7 @@ namespace Medication_Tracker.Data
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.ScheduleTime).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Notes).HasMaxLength(500);
-                
-                // Foreign keys
+
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.MedicationSchedules)
                     .HasForeignKey(e => e.UserId)
@@ -65,7 +83,6 @@ namespace Medication_Tracker.Data
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Notes).HasMaxLength(500);
 
-                // Foreign keys
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.MedicationLogs)
                     .HasForeignKey(e => e.UserId)

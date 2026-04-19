@@ -1,44 +1,47 @@
-using Medication_Tracker.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
+using Medication_Tracker.Data;
+using Medication_Tracker.Models;
 
 namespace Medication_Tracker.Controllers
 {
     public class LoginController : Controller
     {
-        public int ID {get; set;}
-        public string Username {get; set;} = string.Empty;
-        public string Password {get; set;} = string.Empty;
-        
-       public class HomeController : Controller
-    {
-        public IActionResult Login()
+        private readonly ApplicationDbContext _context;
+
+        public LoginController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        // GET: Login page
+        public IActionResult Index()
         {
             return View();
         }
 
+        // POST: Handle login
         [HttpPost]
-        public async Task<IActionResult> Login(LoginController model)
+        public IActionResult Index(string username, string password)
         {
-            if (ModelState.IsValid)
+            var user = _context.Users
+                .FirstOrDefault(u => u.Username == username && u.Password == password);
+
+            if (user != null)
             {
-                // Here you would typically check the username and password against a database
-                // For demonstration purposes, we'll just check if they are not empty
-                if (!string.IsNullOrEmpty(model.Username) && !string.IsNullOrEmpty(model.Password))
-                {
-                    // If the login is successful, redirect to a different page (e.g., dashboard)
-                    return RedirectToAction("Dashboard");
-                }
-                else
-                {
-                    // If the login fails, add an error message to the model state
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                }
+                HttpContext.Session.SetString("User", user.Username);
+                return RedirectToAction("Index", "Home");
             }
 
-            // If we got this far, something failed; redisplay the form
-            return View(model);
+            ViewBag.Error = "Invalid username or password";
+            return View();
         }
+
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Index", "Login");
+        }
+
     }
-}
 }

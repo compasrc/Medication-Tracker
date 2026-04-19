@@ -1,21 +1,24 @@
 ﻿@model Medication_Tracker.Models.Medication
 
 @{
-    ViewData["Title"] = "Add Medication";
+    ViewData["Title"] = "Edit Medication";
+    var existingTimes = ViewBag.ScheduleTimes as string ?? "";
 }
 
 <div class="simple-card">
-    <h1 class="page-title">Add Medication</h1>
+    <h1 class="page-title">Edit Medication</h1>
 
-    <form asp-action="Create" method="post">
+    <form asp-action="Edit" method="post">
         @Html.AntiForgeryToken()
 
+        <input type="hidden" asp-for="Id" />
+
         <label asp-for="Name">Medication Name</label>
-        <input asp-for="Name" class="form-input" placeholder="Enter medication name" />
+        <input asp-for="Name" class="form-input" />
         <span asp-validation-for="Name" class="error"></span>
 
         <label asp-for="Dosage"></label>
-        <input asp-for="Dosage" class="form-input" placeholder="Enter dosage" />
+        <input asp-for="Dosage" class="form-input" />
         <span asp-validation-for="Dosage" class="error"></span>
 
         <label asp-for="Frequency"></label>
@@ -28,18 +31,15 @@
         </select>
         <span asp-validation-for="Frequency" class="error"></span>
 
-        <label asp-for="TimeToTake">Time</label>
-        <input asp-for="TimeToTake" type="time" class="form-input" />
-        <span asp-validation-for="TimeToTake" class="error"></span>
-
         <label for="scheduleTimes">Times (comma separated)</label>
-        <input type="text" name="scheduleTimes" class="form-input" placeholder="06:00, 14:00, 22:00" />
+        <input type="text" name="scheduleTimes" value="@existingTimes" class="form-input" placeholder="06:00, 14:00, 22:00" />
 
         <label asp-for="Description">Notes</label>
-        <textarea asp-for="Description" class="form-textarea" rows="4" placeholder="Optional notes"></textarea>
+        <textarea asp-for="Description" class="form-textarea" rows="4"></textarea>
         <span asp-validation-for="Description" class="error"></span>
 
-        <button class="button-main" type="submit">Save Medication</button>
+        <button class="button-main" type="submit">Save Changes</button>
+        <a asp-action="Index" style="margin-left: 10px;">Cancel</a>
     </form>
 </div>
 

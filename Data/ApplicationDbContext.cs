@@ -40,6 +40,9 @@ namespace Medication_Tracker.Data
 
                 entity.HasIndex(e => e.Username).IsUnique();
 
+                entity.Property(e => e.Password)
+                    .IsRequired();
+
                 entity.Property(e => e.PhoneNumber).HasMaxLength(20);
             });
 

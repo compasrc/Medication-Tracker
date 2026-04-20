@@ -23,12 +23,6 @@ namespace Medication_Tracker.Controllers
         [HttpPost]
         public IActionResult Index(User user)
         {
-            if (_context.Users.Any(u => u.Username == user.Username))
-            {
-                ViewBag.Error = "Username already exists.";
-                return View(user);
-            }
-
             if (_context.Users.Any(u => u.Email == user.Email))
             {
                 ViewBag.Error = "Email already exists.";

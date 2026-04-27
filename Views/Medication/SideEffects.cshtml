@@ -1,0 +1,114 @@
+@model Medication_Tracker.Models.SideEffectsViewModel
+
+@{
+    ViewData["Title"] = "Side Effects";
+}
+
+<div class="simple-card">
+    <h1 class="page-title">Medication Side Effects</h1>
+    <p class="page-subtitle">Search a medication name to view side effects from OpenFDA.</p>
+
+    <form asp-action="SideEffects" method="get" autocomplete="off">
+        <label for="medicationName">Medication Name</label>
+        <input id="medicationName" name="medicationName" class="form-input" value="@Model.MedicationName" placeholder="e.g., ibuprofen" />
+        <div id="suggestions" style="border:1px solid #ddd; border-top:0; display:none; max-height:220px; overflow:auto; background:#fff;"></div>
+        <button class="button-main" type="submit" style="margin-top:10px;">Search</button>
+    </form>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <p class="error" style="margin-top: 12px;">@Model.ErrorMessage</p>
+    }
+
+    @if (Model.SideEffects.Any())
+    {
+        <hr />
+        <h3>Reported Side Effects for "@Model.MedicationName"</h3>
+        <ul>
+            @foreach (var effect in Model.SideEffects)
+            {
+                <li>@effect</li>
+            }
+        </ul>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const input = document.getElementById('medicationName');
+            const box = document.getElementById('suggestions');
+            const endpoint = '@Url.Action("SideEffectsSuggestions", "Medication")';
+
+            let timer = null;
+            let currentController = null;
+
+            function clearSuggestions() {
+                box.innerHTML = '';
+                box.style.display = 'none';
+            }
+
+            function renderSuggestions(items) {
+                if (!items || items.length === 0) {
+                    clearSuggestions();
+                    return;
+                }
+
+                box.innerHTML = '';
+                items.forEach(name => {
+                    const row = document.createElement('div');
+                    row.textContent = name;
+                    row.style.padding = '8px 10px';
+                    row.style.cursor = 'pointer';
+                    row.addEventListener('mouseenter', () => row.style.background = '#f5f5f5');
+                    row.addEventListener('mouseleave', () => row.style.background = 'white');
+                    row.addEventListener('click', () => {
+                        input.value = name;
+                        clearSuggestions();
+                    });
+                    box.appendChild(row);
+                });
+
+                box.style.display = 'block';
+            }
+
+            input.addEventListener('input', function () {
+                const q = input.value.trim();
+
+                if (q.length < 3) {
+                    clearSuggestions();
+                    return;
+                }
+
+                if (timer) clearTimeout(timer);
+                timer = setTimeout(async () => {
+                    if (currentController) currentController.abort();
+                    currentController = new AbortController();
+
+                    try {
+                        const res = await fetch(`${endpoint}?term=${encodeURIComponent(q)}`, {
+                            signal: currentController.signal
+                        });
+
+                        if (!res.ok) {
+                            clearSuggestions();
+                            return;
+                        }
+
+                        const data = await res.json();
+                        renderSuggestions(data);
+                    } catch {
+                        clearSuggestions();
+                    }
+                }, 350);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (e.target !== input && !box.contains(e.target)) {
+                    clearSuggestions();
+                }
+            });
+        });
+    </script>
+}
+

@@ -3,16 +3,20 @@ using Microsoft.EntityFrameworkCore;
 using Medication_Tracker.Data;
 using Medication_Tracker.Models;
 using System.Linq;
+using System.Text.Json;
+using System.Net;
 
 namespace Medication_Tracker.Controllers
 {
     public class MedicationController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public MedicationController(ApplicationDbContext context)
+        public MedicationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory)
         {
             _context = context;
+            _httpClientFactory = httpClientFactory;
         }
 
         private User? GetCurrentUser()
@@ -40,7 +44,7 @@ namespace Medication_Tracker.Controllers
                 .Where(m => m.UserId == currentUser.Id)
                 .ToList();
 
-            
+
             ViewBag.ScheduleTimes = _context.MedicationSchedules
                 .Where(s => s.UserId == currentUser.Id)
                 .ToList();
@@ -74,13 +78,6 @@ namespace Medication_Tracker.Controllers
 
             if (!ModelState.IsValid)
             {
-                // Log exactly what is failing
-                var errors = ModelState
-                    .Where(x => x.Value!.Errors.Count > 0)
-                    .Select(x => $"{x.Key}: {string.Join(", ", x.Value!.Errors.Select(e => e.ErrorMessage))}")
-                    .ToList();
-
-                ViewBag.ValidationErrors = errors;
                 return View(medication);
             }
 
@@ -116,15 +113,122 @@ namespace Medication_Tracker.Controllers
 
         public IActionResult Interactions()
         {
-            var currentUser = GetCurrentUser();
+            // keep old route working
+            return RedirectToAction(nameof(SideEffects));
+        }
 
+        [HttpGet]
+        public async Task<IActionResult> SideEffects(string? medicationName)
+        {
+            var currentUser = GetCurrentUser();
             if (currentUser == null)
             {
                 return RedirectToAction("Index", "Login");
             }
 
-            return View();
+            var vm = new SideEffectsViewModel
+            {
+                MedicationName = medicationName ?? string.Empty
+            };
+
+            if (string.IsNullOrWhiteSpace(medicationName))
+            {
+                return View(vm);
+            }
+
+            try
+            {
+                var term = medicationName.Trim();
+                var encodedTerm = WebUtility.UrlEncode(term);
+
+                // Ask OpenFDA for records that match name and have side-effect-related content
+                var url =
+                    "https://api.fda.gov/drug/label.json" +
+                    $"?search=((openfda.brand_name:\"{encodedTerm}\"+OR+openfda.generic_name:\"{encodedTerm}\"+OR+openfda.substance_name:\"{encodedTerm}\")" +
+                    "+AND+(_exists_:adverse_reactions+OR+_exists_:warnings+OR+_exists_:warnings_and_cautions))" +
+                    "&limit=10";
+
+                var client = _httpClientFactory.CreateClient();
+                using var response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    vm.ErrorMessage = "No side effect data found for that medication.";
+                    return View(vm);
+                }
+
+                using var stream = await response.Content.ReadAsStreamAsync();
+                using var doc = await JsonDocument.ParseAsync(stream);
+
+                if (!doc.RootElement.TryGetProperty("results", out var results) || results.GetArrayLength() == 0)
+                {
+                    vm.ErrorMessage = "No side effect data found for that medication.";
+                    return View(vm);
+                }
+
+                foreach (var result in results.EnumerateArray())
+                {
+                    // Preferred field
+                    if (result.TryGetProperty("adverse_reactions", out var adverse) && adverse.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var item in adverse.EnumerateArray())
+                        {
+                            var text = item.GetString();
+                            if (!string.IsNullOrWhiteSpace(text))
+                            {
+                                vm.SideEffects.Add(text.Trim());
+                            }
+                        }
+                    }
+
+                    // Fallback fields
+                    if (vm.SideEffects.Count == 0 &&
+                        result.TryGetProperty("warnings_and_cautions", out var cautions) &&
+                        cautions.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var item in cautions.EnumerateArray())
+                        {
+                            var text = item.GetString();
+                            if (!string.IsNullOrWhiteSpace(text))
+                            {
+                                vm.SideEffects.Add(text.Trim());
+                            }
+                        }
+                    }
+
+                    if (vm.SideEffects.Count == 0 &&
+                        result.TryGetProperty("warnings", out var warnings) &&
+                        warnings.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var item in warnings.EnumerateArray())
+                        {
+                            var text = item.GetString();
+                            if (!string.IsNullOrWhiteSpace(text))
+                            {
+                                vm.SideEffects.Add(text.Trim());
+                            }
+                        }
+                    }
+
+                    if (vm.SideEffects.Count > 0)
+                    {
+                        break; // stop when we found usable content
+                    }
+                }
+
+                if (vm.SideEffects.Count == 0)
+                {
+                    vm.ErrorMessage = "No side effects section was available for that medication.";
+                }
+            }
+            catch
+            {
+                vm.ErrorMessage = "Could not retrieve data from OpenFDA right now.";
+            }
+
+            return View(vm);
         }
+
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -265,6 +369,76 @@ namespace Medication_Tracker.Controllers
             _context.SaveChanges();
 
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> SideEffectsSuggestions(string? term)
+        {
+            var currentUser = GetCurrentUser();
+            if (currentUser == null) return Unauthorized();
+
+            if (string.IsNullOrWhiteSpace(term) || term.Trim().Length < 3)
+                return Json(new List<string>());
+
+            var token = Uri.EscapeDataString(term.Trim().ToLowerInvariant());
+            var client = _httpClientFactory.CreateClient();
+
+            var queries = new[]
+            {
+                $"openfda.brand_name:{token}*",
+                $"openfda.generic_name:{token}*",
+                $"openfda.substance_name:{token}*"
+            };
+
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var q in queries)
+            {
+                try
+                {
+                    var url = $"https://api.fda.gov/drug/label.json?search={q}&limit=15";
+                    using var response = await client.GetAsync(url);
+                    if (!response.IsSuccessStatusCode) continue;
+
+                    using var stream = await response.Content.ReadAsStreamAsync();
+                    using var doc = await JsonDocument.ParseAsync(stream);
+
+                    if (!doc.RootElement.TryGetProperty("results", out var results)) continue;
+
+                    foreach (var result in results.EnumerateArray())
+                    {
+                        if (!result.TryGetProperty("openfda", out var openfda) || openfda.ValueKind != JsonValueKind.Object)
+                            continue;
+
+                        void Add(string prop)
+                        {
+                            if (openfda.TryGetProperty(prop, out var arr) && arr.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var v in arr.EnumerateArray())
+                                {
+                                    var s = v.GetString();
+                                    if (!string.IsNullOrWhiteSpace(s))
+                                        names.Add(s.Trim());
+                                }
+                            }
+                        }
+
+                        Add("brand_name");
+                        Add("generic_name");
+                        Add("substance_name");
+                    }
+                }
+                catch
+                {
+                    // ignore failed query and continue
+                }
+            }
+
+            return Json(names
+                .Where(n => n.StartsWith(term.Trim(), StringComparison.OrdinalIgnoreCase))
+                .OrderBy(n => n)
+                .Take(25)
+                .ToList());
         }
     }
 }

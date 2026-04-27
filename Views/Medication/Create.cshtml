@@ -45,19 +45,6 @@
     </form>
 </div>
 
-@if (ViewBag.ValidationErrors != null)
-{
-    <div style="color:red; margin-bottom:10px;">
-        <strong>Validation failed:</strong>
-        <ul>
-            @foreach (var error in ViewBag.ValidationErrors)
-            {
-                <li>@error</li>
-            }
-        </ul>
-    </div>
-}
-
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {

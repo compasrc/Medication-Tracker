@@ -30,7 +30,7 @@ The Medication Tracker database is designed to manage users, medications, medica
                                     │         │
                     ┌───────────────┘         └──────────────┐
                     │ 1:M                                1:M │
-                    ↓                                         ↓
+                    ↓                                        ↓
         ┌──────────────────────────────┐    ┌────────────────────────┐
         │   MEDICATIONSCHEDULES        │    │   MEDICATIONLOGS       │
         ├──────────────────────────────┤    ├────────────────────────┤

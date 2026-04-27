@@ -1,0 +1,107 @@
+@model Medication_Tracker.Models.SideEffectsViewModel
+
+@{
+    ViewData["Title"] = "Side Effects";
+}
+
+<div class="simple-card">
+    <h1 class="page-title">Medication Side Effects</h1>
+    <p class="page-subtitle">Search a medication name to view side effects from OpenFDA.</p>
+
+    <form asp-action="SideEffects" method="get" autocomplete="off">
+        <label for="medicationName">Medication Name</label>
+        <input id="medicationName" name="medicationName" class="form-input" value="@Model.MedicationName" placeholder="e.g., ibuprofen" />
+        <div id="suggestions" style="border:1px solid #ddd; border-top:0; display:none; max-height:220px; overflow:auto; background:#fff;"></div>
+        <button class="button-main" type="submit" style="margin-top:10px;">Search</button>
+    </form>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <p class="error" style="margin-top: 12px;">@Model.ErrorMessage</p>
+    }
+
+    @if (Model.Alerts.Any() || Model.SideEffects.Any() || Model.Interactions.Any() || Model.Contraindications.Any() || Model.UsageNotes.Any())
+    {
+        <hr />
+        <h3>Safety Information for "@Model.MedicationName"</h3>
+
+        @if (Model.Alerts.Any())
+        {
+            <h4>Critical Alerts</h4>
+            <ul>@foreach (var item in Model.Alerts) { <li>@item</li> }</ul>
+        }
+
+        @if (Model.SideEffects.Any())
+        {
+            <h4>Common Side Effects / Symptoms</h4>
+            <ul>@foreach (var item in Model.SideEffects) { <li>@item</li> }</ul>
+        }
+
+        @if (Model.Interactions.Any())
+        {
+            <h4>Interaction Warnings</h4>
+            <ul>@foreach (var item in Model.Interactions) { <li>@item</li> }</ul>
+        }
+
+        @if (Model.Contraindications.Any())
+        {
+            <h4>Who Should Avoid It</h4>
+            <ul>@foreach (var item in Model.Contraindications) { <li>@item</li> }</ul>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const input = document.getElementById('medicationName');
+            const box = document.getElementById('suggestions');
+            const endpoint = '@Url.Action("SideEffectsSuggestions", "Medication")';
+
+            let timer = null;
+            let currentController = null;
+            const localCache = new Map();
+
+            function clearSuggestions() {
+                box.innerHTML = '';
+                box.style.display = 'none';
+            }
+
+            function renderSuggestions(items) {
+                if (!items || items.length === 0) return clearSuggestions();
+                box.innerHTML = '';
+                items.forEach(name => {
+                    const row = document.createElement('div');
+                    row.textContent = name;
+                    row.style.padding = '8px 10px';
+                    row.style.cursor = 'pointer';
+                    row.onclick = () => { input.value = name; clearSuggestions(); };
+                    box.appendChild(row);
+                });
+                box.style.display = 'block';
+            }
+
+            input.addEventListener('input', function () {
+                const q = input.value.trim();
+                if (q.length < 3) return clearSuggestions();
+
+                const key = q.toLowerCase();
+                if (localCache.has(key)) return renderSuggestions(localCache.get(key));
+
+                if (timer) clearTimeout(timer);
+                timer = setTimeout(async () => {
+                    if (currentController) currentController.abort();
+                    currentController = new AbortController();
+                    try {
+                        const res = await fetch(`${endpoint}?term=${encodeURIComponent(q)}`, { signal: currentController.signal });
+                        if (!res.ok) return clearSuggestions();
+                        const data = await res.json();
+                        localCache.set(key, data);
+                        renderSuggestions(data);
+                    } catch { clearSuggestions(); }
+                }, 180);
+            });
+        });
+    </script>
+}
+

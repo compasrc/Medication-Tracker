@@ -1,26 +1,53 @@
-﻿@{
+﻿@model Medication_Tracker.Models.Medication
+
+@{
     ViewData["Title"] = "Add Medication";
 }
 
-<div class="simple-card">
-    <h1 class="page-title">Add Medication</h1>
+<div class="form-wrapper">
+    <div class="form-card">
+        <h1>Add Medication</h1>
+        <p class="form-subtitle">Enter medication details and schedule times.</p>
 
-    <label>Medication Name</label>
-    <input class="form-input" type="text" placeholder="Enter medication name" />
+        <form asp-action="Create" method="post">
 
-    <label>Dosage</label>
-    <input class="form-input" type="text" placeholder="Enter dosage" />
+            <div class="form-group">
+                <label asp-for="Name">Medication Name</label>
+                <input asp-for="Name" class="form-input" placeholder="Enter medication name" />
+            </div>
 
-    <label>Frequency</label>
-    <select class="form-select">
-        <option>Once daily</option>
-        <option>Twice daily</option>
-        <option>Every 8 hours</option>
-        <option>As needed</option>
-    </select>
+            <div class="form-group">
+                <label asp-for="Dosage">Dosage</label>
+                <input asp-for="Dosage" class="form-input" placeholder="Enter dosage" />
+            </div>
 
-    <label>Notes</label>
-    <textarea class="form-textarea" rows="4" placeholder="Optional notes"></textarea>
+            <div class="form-group">
+                <label asp-for="Frequency">Frequency</label>
+                <select asp-for="Frequency" class="form-input">
+                    <option value="">Select frequency</option>
+                    <option>Once daily</option>
+                    <option>Twice daily</option>
+                    <option>Three times daily</option>
+                    <option>As needed</option>
+                </select>
+            </div>
 
-    <button class="button-main" type="button">Save Medication</button>
+            <div class="form-group">
+                <label>Time</label>
+                <input type="time" name="TimeToTake" class="form-input" />
+            </div>
+
+            <div class="form-group">
+                <label>Times (comma separated)</label>
+                <input type="text" name="Times" class="form-input" placeholder="06:00, 14:00, 22:00" />
+            </div>
+
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="Notes" class="form-input notes-box" placeholder="Optional notes"></textarea>
+            </div>
+
+            <button type="submit" class="save-btn">Save Medication</button>
+        </form>
+    </div>
 </div>

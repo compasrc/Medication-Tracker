@@ -1,0 +1,171 @@
+@model Medication_Tracker.Models.SideEffectsViewModel
+
+@{
+    ViewData["Title"] = "Side Effects";
+}
+
+<div class="side-page">
+    <div class="side-card">
+        <h1>Medication Side Effects</h1>
+        <p>Search a medication name to view side effects from OpenFDA.</p>
+
+        <form asp-controller="Medication" asp-action="SideEffects" method="get" autocomplete="off" class="side-form">
+            <label for="medicationName">Medication Name</label>
+
+            <div class="side-search-row">
+                <input id="medicationName"
+                       name="medicationName"
+                       class="side-input"
+                       value="@Model.MedicationName"
+                       placeholder="e.g., ibuprofen" />
+
+                <button class="side-btn" type="submit">Search</button>
+            </div>
+
+            <div id="suggestions" class="suggestions-box"></div>
+        </form>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="side-alert">@Model.ErrorMessage</div>
+        }
+
+        @if (Model.Alerts.Any() || Model.SideEffects.Any() || Model.Interactions.Any() || Model.Contraindications.Any())
+        {
+            <div class="results-heading">
+                Safety Information for "@Model.MedicationName"
+            </div>
+
+            @if (Model.Alerts.Any())
+            {
+                <div class="results-card">
+                    <h2>Critical Alerts</h2>
+                    <ul>
+                        @foreach (var item in Model.Alerts)
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            @if (Model.SideEffects.Any())
+            {
+                <div class="results-card">
+                    <h2>Common Side Effects / Symptoms</h2>
+                    <ul>
+                        @foreach (var item in Model.SideEffects)
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            @if (Model.Interactions.Any())
+            {
+                <div class="results-card">
+                    <h2>Interaction Warnings</h2>
+                    <ul>
+                        @foreach (var item in Model.Interactions)
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            @if (Model.Contraindications.Any())
+            {
+                <div class="results-card">
+                    <h2>Who Should Avoid It</h2>
+                    <ul>
+                        @foreach (var item in Model.Contraindications)
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const input = document.getElementById('medicationName');
+            const box = document.getElementById('suggestions');
+            const endpoint = '@Url.Action("SideEffectsSuggestions", "Medication")';
+
+            let timer = null;
+            let currentController = null;
+            const localCache = new Map();
+
+            function clearSuggestions() {
+                box.innerHTML = '';
+                box.style.display = 'none';
+            }
+
+            function renderSuggestions(items) {
+                if (!items || items.length === 0) return clearSuggestions();
+
+                box.innerHTML = '';
+
+                items.forEach(name => {
+                    const row = document.createElement('div');
+                    row.textContent = name;
+                    row.className = 'suggestion-item';
+                    row.onclick = () => {
+                        input.value = name;
+                        clearSuggestions();
+                    };
+                    box.appendChild(row);
+                });
+
+                box.style.display = 'block';
+            }
+
+            input.addEventListener('input', function () {
+                const q = input.value.trim();
+
+                if (q.length < 3) return clearSuggestions();
+
+                const key = q.toLowerCase();
+
+                if (localCache.has(key)) {
+                    return renderSuggestions(localCache.get(key));
+                }
+
+                if (timer) clearTimeout(timer);
+
+                timer = setTimeout(async () => {
+                    if (currentController) currentController.abort();
+
+                    currentController = new AbortController();
+
+                    try {
+                        const res = await fetch(`${endpoint}?term=${encodeURIComponent(q)}`, {
+                            signal: currentController.signal
+                        });
+
+                        if (!res.ok) return clearSuggestions();
+
+                        const data = await res.json();
+
+                        localCache.set(key, data);
+                        renderSuggestions(data);
+                    } catch {
+                        clearSuggestions();
+                    }
+                }, 180);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!input.contains(e.target) && !box.contains(e.target)) {
+                    clearSuggestions();
+                }
+            });
+        });
+    </script>
+}

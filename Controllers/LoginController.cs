@@ -1,4 +1,3 @@
-using Medication_Tracker.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Client;
 using System.Diagnostics;

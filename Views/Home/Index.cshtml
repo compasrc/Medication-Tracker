@@ -1,20 +1,171 @@
 ﻿@{
     ViewData["Title"] = "Home";
+
+    var medications = ViewBag.Medications as List<Medication_Tracker.Models.Medication>;
+    var schedules = ViewBag.ScheduleTimes as List<Medication_Tracker.Models.MedicationSchedule>;
+    var logsToday = ViewBag.LogsToday as List<Medication_Tracker.Models.MedicationLog>;
+    var nextSchedule = ViewBag.NextSchedule as Medication_Tracker.Models.MedicationSchedule;
+    var todaySchedules = ViewBag.TodaySchedules as List<Medication_Tracker.Models.MedicationSchedule>;
 }
 
-<div class="simple-card">
-    <h1 class="page-title">Welcome to Medication Tracker</h1>
-    <p class="page-subtitle">
-        Keep track of medications, schedules, and possible interactions in one place.
-    </p>
+<div class="dashboard-wrapper">
 
-    <a class="button-main" asp-controller="Medication" asp-action="Create">Add Medication</a>
-</div>
+    <div class="dashboard-header">
+        <h1>Welcome back!</h1>
+        <p>Here’s what you have coming up today.</p>
+    </div>
 
-<div class="simple-card">
-    <h2>Today's Summary</h2>
-    <p><strong>Taken:</strong> 0</p>
-    <p><strong>Missed:</strong> 0</p>
-    <p><strong>Remaining:</strong> 4</p>
-    <p><strong>Adherence:</strong> 100%</p>
+    @if (medications == null || !medications.Any())
+    {
+        <div class="dashboard-card empty-card">
+            <h2>No medications yet</h2>
+            <p>Add your first medication to start tracking.</p>
+
+            <a class="dashboard-btn" asp-controller="Medication" asp-action="Create">
+                Add Medication
+            </a>
+        </div>
+    }
+    else
+    {
+        var nextMedication = medications
+            .FirstOrDefault(m => nextSchedule != null && m.Id == nextSchedule.MedicationId);
+
+        <!-- STATS -->
+        <div class="dashboard-stats">
+
+            <a asp-controller="Medication" asp-action="Index" class="stat-card clickable-card">
+                <h2>@ViewBag.TotalMedications</h2>
+                <p>Total Medications</p>
+            </a>
+
+            <div class="stat-card">
+                <h2>@ViewBag.TakenCount</h2>
+                <p>Taken Today</p>
+            </div>
+
+            <div class="stat-card">
+                <h2>@ViewBag.MissedCount</h2>
+                <p>Not Taken</p>
+            </div>
+
+            <div class="stat-card">
+                <h2>@ViewBag.RemainingCount</h2>
+                <p>Remaining</p>
+            </div>
+
+        </div>
+
+        <!-- MAIN GRID -->
+        <div class="dashboard-grid">
+
+            <!-- NEXT MED -->
+            <div class="dashboard-card next-card">
+                <h2>Next Medication</h2>
+
+                @if (nextSchedule != null && nextMedication != null)
+                {
+                    <p class="med-name">@nextMedication.Name</p>
+                    <p class="med-time">Time: @nextSchedule.ScheduleTime</p>
+                    <p class="med-time">Dosage: @nextMedication.Dosage</p>
+
+                    <div class="status-buttons">
+
+                        <form asp-controller="Home" asp-action="LogMedication" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="medicationId" value="@nextMedication.Id" />
+                            <input type="hidden" name="scheduleId" value="@nextSchedule.Id" />
+                            <input type="hidden" name="status" value="Taken" />
+                            <button type="submit" class="taken-btn">Taken</button>
+                        </form>
+
+                        <form asp-controller="Home" asp-action="LogMedication" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="medicationId" value="@nextMedication.Id" />
+                            <input type="hidden" name="scheduleId" value="@nextSchedule.Id" />
+                            <input type="hidden" name="status" value="Not Taken" />
+                            <button type="submit" class="not-taken-btn">Not Taken</button>
+                        </form>
+
+                    </div>
+                }
+                else
+                {
+                    <p class="med-name">All caught up 🎉</p>
+                    <p class="med-time">No more medications scheduled today.</p>
+                }
+            </div>
+
+            <!-- TODAY SCHEDULE -->
+            <div class="dashboard-card">
+                <h2>Today’s Schedule</h2>
+
+                @if (todaySchedules != null && todaySchedules.Any())
+                {
+                    foreach (var schedule in todaySchedules)
+                    {
+                        var med = medications.FirstOrDefault(m => m.Id == schedule.MedicationId);
+                        var log = logsToday?.FirstOrDefault(l => l.MedicationScheduleId == schedule.Id);
+
+                        var status = log != null ? log.Status : "Pending";
+                        var statusClass = status == "Taken" ? "taken"
+                                         : status == "Not Taken" ? "missed"
+                                         : "pending";
+
+                        <div class="schedule-item">
+
+                            <span class="schedule-time">@schedule.ScheduleTime</span>
+
+                            <strong>@(med != null ? med.Name : "Medication")</strong>
+
+                            @if (status == "Pending" && med != null)
+                            {
+                                <div class="schedule-actions">
+
+                                    <form asp-controller="Home" asp-action="LogMedication" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="medicationId" value="@med.Id" />
+                                        <input type="hidden" name="scheduleId" value="@schedule.Id" />
+                                        <input type="hidden" name="status" value="Taken" />
+                                        <button class="mini-taken-btn" type="submit">✓</button>
+                                    </form>
+
+                                    <form asp-controller="Home" asp-action="LogMedication" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="medicationId" value="@med.Id" />
+                                        <input type="hidden" name="scheduleId" value="@schedule.Id" />
+                                        <input type="hidden" name="status" value="Not Taken" />
+                                        <button class="mini-missed-btn" type="submit">✕</button>
+                                    </form>
+
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="status @statusClass">@status</span>
+                            }
+
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p>No schedule found.</p>
+                }
+            </div>
+
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="quick-actions">
+            <a class="dashboard-btn" asp-controller="Medication" asp-action="Index">
+                View Medications
+            </a>
+
+            <a class="dashboard-btn" asp-controller="Medication" asp-action="Create">
+                Add Medication
+            </a>
+        </div>
+    }
+
 </div>

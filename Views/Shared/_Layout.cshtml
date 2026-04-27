@@ -4,30 +4,88 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - MedTracker</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
+
 <body>
+
     <header class="main-header">
         <div class="container nav-wrapper">
+
+            <!-- LOGO -->
             <a class="logo" asp-controller="Home" asp-action="Index">MedTracker</a>
 
-            <nav class="main-nav">
-                <a asp-controller="Home" asp-action="Index">Home</a>
-                <a asp-controller="Home" asp-action="Login">Login</a>
-                <a asp-controller="Home" asp-action="SignUp">SignUp</a>
-                <a asp-controller="Medication" asp-action="Index">Medications</a>
-                <a asp-controller="Medication" asp-action="Create">Add Medication</a>
-                <a asp-controller="Medication" asp-action="Interactions">Interactions</a>
+            @using Microsoft.AspNetCore.Http
+
+<!-- NAVIGATION -->
+<nav class="main-nav">
+
+                @if (Context.Session.GetString("User") != null)
+                {
+                    <div class="nav-right">
+
+                        <span class="welcome-text">
+                            Welcome, @Context.Session.GetString("User")
+                        </span>
+
+                        <a asp-controller="Home" asp-action="Index">Home</a>
+
+                        <a asp-controller="Medication" asp-action="Index">
+                            Medications
+                        </a>
+
+                        <a asp-controller="Medication" asp-action="Create">
+                            Add Medication
+                        </a>
+
+                        <a asp-controller="Medication" asp-action="SideEffects">
+                            Side Effects
+                        </a>
+
+                        <a class="logout-btn"
+                               asp-controller="Login"
+                               asp-action="Logout">
+                            Logout
+                        </a>
+
+                    </div>
+                }
+                else
+                {
+                    <div class="nav-right">
+
+                        <a class="btn-outline"
+                               asp-controller="Login"
+                               asp-action="Index">
+                            Login
+                        </a>
+
+                        <a class="btn-primary"
+                               asp-controller="SignUp"
+                               asp-action="Index">
+                            Sign Up
+                        </a>
+
+                    </div>
+                }
+
             </nav>
+
         </div>
     </header>
 
+    <!-- PAGE CONTENT -->
     <main class="container page-section">
         @RenderBody()
     </main>
 
+    <!-- SCRIPTS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

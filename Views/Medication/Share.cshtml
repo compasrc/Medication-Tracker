@@ -1,0 +1,37 @@
+﻿@model List<Medication_Tracker.Models.Medication>
+
+@{
+    ViewData["Title"] = "Share Medication List";
+    var schedules = ViewBag.ScheduleTimes as List<Medication_Tracker.Models.MedicationSchedule>;
+}
+
+<div class="share-card">
+    <h1>Medication List</h1>
+    <p>Generated from MedTracker</p>
+
+    @foreach (var med in Model)
+    {
+        var medTimes = schedules?
+            .Where(s => s.MedicationId == med.Id)
+            .Select(s => s.ScheduleTime)
+            .ToList();
+
+        <div class="share-med-item">
+            <h3>@med.Name</h3>
+            <p><strong>Dosage:</strong> @med.Dosage</p>
+            <p><strong>Frequency:</strong> @med.Frequency</p>
+
+            @if (medTimes != null && medTimes.Any())
+            {
+                <p><strong>Times:</strong> @string.Join(", ", medTimes)</p>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(med.Description))
+            {
+                <p><strong>Notes:</strong> @med.Description</p>
+            }
+        </div>
+    }
+
+    <button onclick="window.print()" class="dashboard-btn">Print / Save as PDF</button>
+</div>

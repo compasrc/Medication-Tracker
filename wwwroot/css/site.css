@@ -667,3 +667,33 @@ body {
     box-shadow: 0 10px 26px rgba(0,0,0,0.12);
     cursor: pointer;
 }
+
+.share-card {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 40px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.share-med-item {
+    border-bottom: 1px solid #eee;
+    padding: 18px 0;
+}
+
+@media print {
+    .main-header,
+    .dashboard-btn {
+        display: none;
+    }
+
+    body {
+        background: white;
+    }
+
+    .share-card {
+        box-shadow: none;
+        margin: 0;
+    }
+}

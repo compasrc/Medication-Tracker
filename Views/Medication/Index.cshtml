@@ -1,52 +1,51 @@
 ﻿@model List<Medication_Tracker.Models.Medication>
-@using Medication_Tracker.Models
 
 @{
     ViewData["Title"] = "Medications";
-    var schedules = ViewBag.ScheduleTimes as List<MedicationSchedule>;
+    var schedules = ViewBag.ScheduleTimes as List<Medication_Tracker.Models.MedicationSchedule>;
 }
 
-<div class="simple-card">
-    <h1 class="page-title">Medications</h1>
-    <p>Here is your current medication list:</p>
+<div class="med-page">
+    <div class="med-header">
+        <div>
+            <h1>Medications</h1>
+            <p>Your current medication list.</p>
+        </div>
 
-    @if (Model == null || !Model.Any())
-    {
-        <p>No medications found.</p>
-    }
-    else
-    {
-        <ul style="list-style: none; padding-left: 0;">
-            @foreach (var medication in Model)
-            {
-                var medTimes = schedules?
-                    .Where(s => s.MedicationId == medication.Id)
-                    .Select(s => s.ScheduleTime)
-                    .ToList();
+        <a class="dashboard-btn" asp-controller="Medication" asp-action="Create">
+            Add Medication
+        </a>
+    </div>
 
-                <li style="margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 12px;">
-                    <strong>@medication.Name</strong> - @medication.Dosage
-                    <br />
-                    Frequency: @medication.Frequency
+    <div class="med-grid">
+        @foreach (var med in Model)
+        {
+            var medTimes = schedules?
+                .Where(s => s.MedicationId == med.Id)
+                .Select(s => s.ScheduleTime)
+                .ToList();
 
-                    @if (medTimes != null && medTimes.Any())
-                    {
-                        <br />
-                        <span>Times: @string.Join(", ", medTimes)</span>
-                    }
+            <div class="med-list-card">
+                <h2>@med.Name</h2>
 
-                    @if (!string.IsNullOrWhiteSpace(medication.Description))
-                    {
-                        <br />
-                        <span>Notes: @medication.Description</span>
-                    }
+                <p><strong>Dosage:</strong> @med.Dosage</p>
+                <p><strong>Frequency:</strong> @med.Frequency</p>
 
-                    <br /><br />
-                    <a asp-action="Edit" asp-route-id="@medication.Id">Edit</a>
-                    |
-                    <a asp-action="Delete" asp-route-id="@medication.Id">Delete</a>
-                </li>
-            }
-        </ul>
-    }
+                @if (!string.IsNullOrWhiteSpace(med.Description))
+                {
+                    <p><strong>Notes:</strong> @med.Description</p>
+                }
+
+                @if (medTimes != null && medTimes.Any())
+                {
+                    <p><strong>Times:</strong> @string.Join(", ", medTimes)</p>
+                }
+
+                <div class="med-actions">
+                    <a asp-controller="Medication" asp-action="Edit" asp-route-id="@med.Id">Edit</a>
+                    <a class="delete-link" asp-controller="Medication" asp-action="Delete" asp-route-id="@med.Id">Delete</a>
+                </div>
+            </div>
+        }
+    </div>
 </div>

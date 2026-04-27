@@ -73,7 +73,7 @@ namespace Medication_Tracker.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Medication medication, string? scheduleTimes)
+        public IActionResult Create(Medication medication, string? scheduleTimes, string? Times, string? TimeToTake)
         {
             var currentUser = GetCurrentUser();
 
@@ -93,9 +93,16 @@ namespace Medication_Tracker.Controllers
             _context.Medications.Add(medication);
             _context.SaveChanges();
 
-            if (!string.IsNullOrWhiteSpace(scheduleTimes))
+            // Accept whichever input name your form is using
+            var allTimesText = !string.IsNullOrWhiteSpace(scheduleTimes)
+                ? scheduleTimes
+                : !string.IsNullOrWhiteSpace(Times)
+                    ? Times
+                    : TimeToTake;
+
+            if (!string.IsNullOrWhiteSpace(allTimesText))
             {
-                var times = scheduleTimes.Split(',');
+                var times = allTimesText.Split(',');
 
                 foreach (var time in times)
                 {
@@ -103,15 +110,13 @@ namespace Medication_Tracker.Controllers
 
                     if (!string.IsNullOrEmpty(trimmedTime))
                     {
-                        var schedule = new MedicationSchedule
+                        _context.MedicationSchedules.Add(new MedicationSchedule
                         {
                             UserId = currentUser.Id,
                             MedicationId = medication.Id,
                             ScheduleTime = trimmedTime,
                             Notes = ""
-                        };
-
-                        _context.MedicationSchedules.Add(schedule);
+                        });
                     }
                 }
 

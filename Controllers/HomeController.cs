@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Medication_Tracker.Data;
 using Medication_Tracker.Models;
+using System;
 using System.Linq;
 
 namespace Medication_Tracker.Controllers
@@ -23,7 +25,8 @@ namespace Medication_Tracker.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == username);
+            var currentUser = _context.Users
+                .FirstOrDefault(u => u.Username == username);
 
             if (currentUser == null)
             {
@@ -39,32 +42,35 @@ namespace Medication_Tracker.Controllers
                 .ToList();
 
             var logsToday = _context.MedicationLogs
-                .Where(l => l.UserId == currentUser.Id && l.DateTaken.Date == DateTime.Today)
+                .Where(l => l.UserId == currentUser.Id &&
+                            l.TakenAt.HasValue &&
+                            l.TakenAt.Value.Date == DateTime.Today)
                 .ToList();
 
             var now = DateTime.Now.TimeOfDay;
 
             var upcomingSchedules = schedules
-                .Where(s =>
-                {
-                    if (TimeSpan.TryParse(s.ScheduleTime, out var parsedTime))
-                    {
-                        return parsedTime >= now;
-                    }
-
-                    return false;
-                })
+                .Where(s => TimeSpan.TryParse(s.ScheduleTime, out _))
                 .Where(s => !logsToday.Any(l => l.MedicationScheduleId == s.Id))
                 .OrderBy(s => TimeSpan.Parse(s.ScheduleTime))
                 .ToList();
 
-            var nextSchedule = upcomingSchedules.FirstOrDefault();
+            var nextSchedule = upcomingSchedules
+                .FirstOrDefault(s => TimeSpan.Parse(s.ScheduleTime) >= now)
+                ?? upcomingSchedules.FirstOrDefault();
 
             ViewBag.Medications = medications;
             ViewBag.ScheduleTimes = schedules;
+            ViewBag.TodaySchedules = schedules
+                .Where(s => TimeSpan.TryParse(s.ScheduleTime, out _))
+                .OrderBy(s => TimeSpan.Parse(s.ScheduleTime))
+                .ToList();
+
+            ViewBag.LogsToday = logsToday;
+
             ViewBag.TotalMedications = medications.Count;
-            ViewBag.TakenCount = logsToday.Count(l => l.Status == "Taken");
-            ViewBag.MissedCount = logsToday.Count(l => l.Status == "Not Taken");
+            ViewBag.TakenCount = logsToday.Count(l => l.WasTaken);
+            ViewBag.MissedCount = logsToday.Count(l => !l.WasTaken);
             ViewBag.RemainingCount = upcomingSchedules.Count;
             ViewBag.NextSchedule = nextSchedule;
 
@@ -82,33 +88,47 @@ namespace Medication_Tracker.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == username);
+            var currentUser = _context.Users
+                .FirstOrDefault(u => u.Username == username);
 
             if (currentUser == null)
             {
                 return RedirectToAction("Index", "Login");
             }
 
-            var alreadyLogged = _context.MedicationLogs.Any(l =>
-                l.UserId == currentUser.Id &&
-                l.MedicationScheduleId == scheduleId &&
-                l.DateTaken.Date == DateTime.Today);
+            var existingLog = _context.MedicationLogs
+                .FirstOrDefault(l =>
+                    l.UserId == currentUser.Id &&
+                    l.MedicationScheduleId == scheduleId &&
+                    l.TakenAt.HasValue &&
+                    l.TakenAt.Value.Date == DateTime.Today);
 
-            if (!alreadyLogged)
+            if (existingLog != null)
+            {
+                existingLog.Status = status;
+                existingLog.TakenAt = DateTime.Now;
+                existingLog.MedicationId = medicationId;
+                existingLog.WasTaken = status == "Taken";
+                existingLog.CreatedAt = DateTime.Now;
+            }
+            else
             {
                 var log = new MedicationLog
                 {
                     UserId = currentUser.Id,
                     MedicationId = medicationId,
                     MedicationScheduleId = scheduleId,
-                    DateTaken = DateTime.Now,
+                    TakenAt = DateTime.Now,
+                    CreatedAt = DateTime.Now,
+                    WasTaken = status == "Taken",
                     Status = status,
                     Notes = ""
                 };
 
                 _context.MedicationLogs.Add(log);
-                _context.SaveChanges();
             }
+
+            _context.SaveChanges();
 
             return RedirectToAction("Index");
         }

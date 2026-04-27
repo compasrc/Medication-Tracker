@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Medication_Tracker.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260419155545_AddPasswordToUsers")]
+    [Migration("20260419155545_AddPasswordToUsers")] 
     partial class AddPasswordToUsers
     {
         /// <inheritdoc />

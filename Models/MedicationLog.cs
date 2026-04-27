@@ -15,8 +15,14 @@ namespace Medication_Tracker.Models
         public int MedicationScheduleId { get; set; }
         public MedicationSchedule MedicationSchedule { get; set; } = null!;
 
-        public DateTime DateTaken { get; set; }
+        public DateTime? TakenAt { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        public bool WasTaken { get; set; }
+
         public string Status { get; set; } = string.Empty;
+
         public string Notes { get; set; } = string.Empty;
     }
 }

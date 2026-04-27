@@ -1,47 +1,59 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
+using System.Diagnostics;
 using Medication_Tracker.Data;
-using Medication_Tracker.Models;
+
 
 namespace Medication_Tracker.Controllers
 {
     public class LoginController : Controller
     {
-        private readonly ApplicationDbContext _context;
 
-        public LoginController(ApplicationDbContext context)
+        public class HomeController : Controller
         {
-            _context = context;
-        }
-
-        // GET: Login page
-        public IActionResult Index()
-        {
-            return View();
-        }
-
-        // POST: Handle login
-        [HttpPost]
-        public IActionResult Index(string username, string password)
-        {
-            var user = _context.Users
-                .FirstOrDefault(u => u.Username == username && u.Password == password);
-
-            if (user != null)
+			private readonly ApplicationDbContext context; //database context for accessing the database
+			public HomeController(ApplicationDbContext context)
+			{
+				this.context = context;
+			}
+			public IActionResult LoginDashBoard()
             {
-                HttpContext.Session.SetString("User", user.Username);
-                return RedirectToAction("Index", "Home");
+                return View();
             }
 
-            ViewBag.Error = "Invalid username or password";
-            return View();
-        }
+			[HttpPost]
+            public async Task<IActionResult> Login(User user)
+            { 
+				if (ModelState.IsValid)
+                {
+                    if (!string.IsNullOrEmpty(user.Email) && !string.IsNullOrWhiteSpace(user.PasswordHash))
+                    {
+                        return RedirectToAction("Dashboard");
+                    }
+                    else
+                    {
+                        // If the login fails, add an error message to the model state
+                        ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    }
+                }
+                return View();
+            }
 
-        public IActionResult Logout()
-        {
-            HttpContext.Session.Clear();
-            return RedirectToAction("Index", "Login");
-        }
+            public IActionResult Logout()
+            {
+                return RedirectToAction("LoginDashBoard", "Login"); // Redirect to the login page
+			}
 
-    }
+            public IActionResult PasswordRecoveryControl(Medication User, string Email)
+            {
+                var user = context.Users.FirstOrDefault(u => u.Email == Email);
+			    return RedirectToAction("PasswordRecovery", "PasswordRecovery");
+			}
+
+			public IActionResult NotSignedUp()
+            {
+                return RedirectToAction("SignUpUser", "SignUp");
+            }
+        }
+}
 }

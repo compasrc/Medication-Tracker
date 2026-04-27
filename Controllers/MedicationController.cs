@@ -1,185 +1,112 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
+﻿using System.Threading.Tasks;
 using Medication_Tracker.Data;
 using Medication_Tracker.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;  
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using System.Linq;
 
 namespace Medication_Tracker.Controllers
 {
     public class MedicationController : Controller
     {
-        private readonly ApplicationDbContext _context;
-
+        private readonly ApplicationDbContext context; //database context for accessing the database
         public MedicationController(ApplicationDbContext context)
         {
-            _context = context;
+            this.context = context;
         }
-
-        
-        private User? GetCurrentUser()
+        public IActionResult ViewAll()
         {
-            var username = HttpContext.Session.GetString("User");
-
-            if (string.IsNullOrEmpty(username))
-                return null;
-
-            return _context.Users.FirstOrDefault(u => u.Username == username);
-        }
-
-       
-        public IActionResult Index()
-        {
-            var currentUser = GetCurrentUser();
-
-            if (currentUser == null)
-                return RedirectToAction("Index", "Login");
-
-            var medications = _context.Medications
-                .Where(m => m.UserId == currentUser.Id)
-                .ToList();
-
-            var schedules = _context.MedicationSchedules
-                .Where(s => s.UserId == currentUser.Id)
-                .ToList();
-
-            ViewBag.ScheduleTimes = schedules;
-
+            var medications = context.Medications.ToList();
             return View(medications);
         }
 
-
-        public IActionResult Create()
+        public ActionResult ViewDetails(int id)
         {
-            var currentUser = GetCurrentUser();
-
-            if (currentUser == null)
-                return RedirectToAction("Index", "Login");
-
-            return View();
-        }
-
-       
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Create(Medication medication, string times)
-        {
-            var currentUser = GetCurrentUser();
-
-            if (currentUser == null)
-                return RedirectToAction("Index", "Login");
-
-            medication.UserId = currentUser.Id;
-
-            _context.Medications.Add(medication);
-            _context.SaveChanges();
-
-
-            if (!string.IsNullOrEmpty(times))
-            {
-                var timeList = times.Split(',');
-
-                foreach (var time in timeList)
-                {
-                    var trimmed = time.Trim();
-
-                    if (!string.IsNullOrEmpty(trimmed))
-                    {
-                        _context.MedicationSchedules.Add(new MedicationSchedule
-                        {
-                            MedicationId = medication.Id,
-                            UserId = currentUser.Id,
-                            ScheduleTime = trimmed
-                        });
-                    }
-                }
-
-                _context.SaveChanges();
-            }
-
-            return RedirectToAction("Index");
-        }
-
-       
-        public IActionResult Edit(int id)
-        {
-            var currentUser = GetCurrentUser();
-
-            if (currentUser == null)
-                return RedirectToAction("Index", "Login");
-
-            var medication = _context.Medications
-                .FirstOrDefault(m => m.Id == id && m.UserId == currentUser.Id);
-
-            if (medication == null)
-                return NotFound();
-
+            var medication = context.Medications.FirstOrDefault(); // Needs a method that retrieves a specific medication by its name from the database for viewing !! work on this !!
             return View(medication);
         }
 
-        
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Edit(Medication medication)
+		public IActionResult Create(int id)
+		{
+			var medication = context.Medications.FirstOrDefault(m => m.Id == id); // Needs a method that retrieves a specific medication by its name from the database for deletion confirmation
+			if (medication == null)
+			{
+				return NotFound();
+			}
+			return View(medication);
+		}
+
+		
+		[HttpPost]
+        public async Task<IActionResult> Create(Medication Medication)
         {
-            var currentUser = GetCurrentUser();
-
-            if (currentUser == null)
-                return RedirectToAction("Index", "Login");
-
-            medication.UserId = currentUser.Id;
-
-            _context.Medications.Update(medication);
-            _context.SaveChanges();
-
-            return RedirectToAction("Index");
+            if (ModelState.IsValid)
+            {
+                context.Medications.Add(Medication); 
+                await context.SaveChangesAsync(); 
+                return RedirectToAction("ViewAll");
+            }
+            return View(Medication);
         }
 
-       
+		public IActionResult Edit(int id)
+		{
+			var medication = context.Medications.FirstOrDefault(m => m.Id == id);
+			if (medication == null)
+			{
+				return NotFound();
+			}
+			return View(medication);
+		}
+
+		[HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(Medication model)
+        {
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    context.Entry(model).State = EntityState.Modified; 
+                    context.Update(model);
+                    await context.SaveChangesAsync(); 
+                }
+                catch (DbUpdateConcurrencyException) // need to update this
+                {
+                    return RedirectToAction("ViewAll");
+                }
+
+            }
+            return View(model);
+        }
+
         public IActionResult Delete(int id)
         {
-            var currentUser = GetCurrentUser();
-
-            if (currentUser == null)
-                return RedirectToAction("Index", "Login");
-
-            var medication = _context.Medications
-                .FirstOrDefault(m => m.Id == id && m.UserId == currentUser.Id);
-
-            if (medication != null)
+            var medication = context.Medications.FirstOrDefault(m => m.Id == id); // Needs a method that retrieves a specific medication by its name from the database for deletion confirmation
+            if (medication == null)
             {
-                // delete schedules first
-                var schedules = _context.MedicationSchedules
-                    .Where(s => s.MedicationId == medication.Id)
-                    .ToList();
-
-                _context.MedicationSchedules.RemoveRange(schedules);
-
-                _context.Medications.Remove(medication);
-                _context.SaveChanges();
+                return NotFound();
             }
-
-            return RedirectToAction("Index");
+            return View(medication);
         }
 
-        
-        public IActionResult Share()
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteConfirmed(int id)
         {
-            var currentUser = GetCurrentUser();
+            var medication = context.Medications.FirstOrDefault(m => m.Id == id);
+            if (medication == null)
+            {
+                return NotFound();
+            }
 
-            if (currentUser == null)
-                return RedirectToAction("Index", "Login");
+            context.Medications.Remove(medication);
+            context.SaveChanges();
+            return RedirectToAction("ViewAll");
 
-            var medications = _context.Medications
-                .Where(m => m.UserId == currentUser.Id)
-                .ToList();
-
-            var schedules = _context.MedicationSchedules
-                .Where(s => s.UserId == currentUser.Id)
-                .ToList();
-
-            ViewBag.ScheduleTimes = schedules;
-
-            return View(medications);
         }
     }
 }

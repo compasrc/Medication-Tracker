@@ -1,3 +1,5 @@
+using Medication_Tracker.Data;
+using Medication_Tracker.Models;
 using Microsoft.AspNetCore.Mvc;
 using Medication_Tracker.Data;
 using Medication_Tracker.Models;
@@ -7,38 +9,36 @@ namespace Medication_Tracker.Controllers
 {
     public class SignUpController : Controller
     {
-        private readonly ApplicationDbContext _context;
+		private readonly ApplicationDbContext context; //database context for accessing the database
+		public SignUpController(ApplicationDbContext context)
+		{
+			this.context = context;
+		}
 
-        public SignUpController(ApplicationDbContext context)
+		public IActionResult SignUpUser()
         {
-            _context = context;
-        }
-
-        [HttpGet]
-        public IActionResult Index()
-        {
+            var Account = new User();
+            // Account.Name = placeholder until model for login info is created
             return View();
         }
-
         [HttpPost]
-        public IActionResult Index(User user)
+        public async Task<IActionResult> SignUp(User user)
         {
-            if (_context.Users.Any(u => u.Email == user.Email))
+            if (ModelState.IsValid)
             {
-                ViewBag.Error = "Email already exists.";
-                return View(user);
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return View(user);
-            }
-
-            user.CreatedAt = DateTime.UtcNow;
-            _context.Users.Add(user);
-            _context.SaveChanges();
-
-            return RedirectToAction("Index", "Login");
+               
+                if (!string.IsNullOrEmpty(user.Email) && !string.IsNullOrWhiteSpace(user.PasswordHash))
+                {
+                    Console.WriteLine($"You have successfully signed up. You will be redirected to the login page.");
+                    return RedirectToAction("Login", "Login");
+                }
+                else
+                {
+                   
+                    ModelState.AddModelError(string.Empty, "Invalid sign-up attempt.");
+                }
+            }            
+            return View();
         }
     }
 }

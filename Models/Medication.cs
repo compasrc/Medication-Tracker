@@ -26,5 +26,7 @@ namespace Medication_Tracker.Models
 
         [ValidateNever]
         public ICollection<MedicationLog> MedicationLogs { get; set; } = new List<MedicationLog>();
-    }
+
+      
+	}
 }

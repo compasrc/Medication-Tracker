@@ -19,7 +19,7 @@
         <span asp-validation-for="Dosage" class="error"></span>
 
         <label asp-for="Frequency"></label>
-        <select asp-for="Frequency" class="form-select">
+        <select asp-for="Frequency" class="form-select" id="frequencySelect">
             <option value="">Select frequency</option>
             <option value="Once daily">Once daily</option>
             <option value="Twice daily">Twice daily</option>
@@ -28,12 +28,14 @@
         </select>
         <span asp-validation-for="Frequency" class="error"></span>
 
-        <label asp-for="TimeToTake">Time</label>
-        <input asp-for="TimeToTake" type="time" class="form-input" />
-        <span asp-validation-for="TimeToTake" class="error"></span>
+        <div id="timingFields">
+            <label asp-for="TimeToTake">Time</label>
+            <input asp-for="TimeToTake" type="time" class="form-input" id="timeToTakeInput" />
+            <span asp-validation-for="TimeToTake" class="error"></span>
 
-        <label for="scheduleTimes">Times (comma separated)</label>
-        <input type="text" name="scheduleTimes" class="form-input" placeholder="06:00, 14:00, 22:00" />
+            <label for="scheduleTimes">Times (comma separated)</label>
+            <input type="text" name="scheduleTimes" id="scheduleTimesInput" class="form-input" placeholder="06:00, 14:00, 22:00" />
+        </div>
 
         <label asp-for="Description">Notes</label>
         <textarea asp-for="Description" class="form-textarea" rows="4" placeholder="Optional notes"></textarea>
@@ -43,6 +45,38 @@
     </form>
 </div>
 
+@if (ViewBag.ValidationErrors != null)
+{
+    <div style="color:red; margin-bottom:10px;">
+        <strong>Validation failed:</strong>
+        <ul>
+            @foreach (var error in ViewBag.ValidationErrors)
+            {
+                <li>@error</li>
+            }
+        </ul>
+    </div>
+}
+
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const frequencySelect = document.getElementById('frequencySelect');
+            const timingFields = document.getElementById('timingFields');
+            const timeInput = document.getElementById('timeToTakeInput');
+            const scheduleTimesInput = document.getElementById('scheduleTimesInput');
+
+            function toggleTimingFields() {
+                const isAsNeeded = frequencySelect.value === 'As needed';
+                timingFields.style.display = isAsNeeded ? 'none' : 'block';
+                if (isAsNeeded) {
+                    timeInput.value = '';
+                    scheduleTimesInput.value = '';
+                }
+            }
+
+            frequencySelect.addEventListener('change', toggleTimingFields);
+            toggleTimingFields();
+        });
+    </script>
 }

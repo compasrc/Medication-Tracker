@@ -63,7 +63,7 @@ namespace Medication_Tracker.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Medication medication, string scheduleTimes)
+        public IActionResult Create(Medication medication, string? scheduleTimes)
         {
             var currentUser = GetCurrentUser();
 
@@ -74,6 +74,13 @@ namespace Medication_Tracker.Controllers
 
             if (!ModelState.IsValid)
             {
+                // Log exactly what is failing
+                var errors = ModelState
+                    .Where(x => x.Value!.Errors.Count > 0)
+                    .Select(x => $"{x.Key}: {string.Join(", ", x.Value!.Errors.Select(e => e.ErrorMessage))}")
+                    .ToList();
+
+                ViewBag.ValidationErrors = errors;
                 return View(medication);
             }
 
@@ -86,11 +93,9 @@ namespace Medication_Tracker.Controllers
             if (!string.IsNullOrWhiteSpace(scheduleTimes))
             {
                 var times = scheduleTimes.Split(',');
-
                 foreach (var time in times)
                 {
                     var trimmedTime = time.Trim();
-
                     if (!string.IsNullOrEmpty(trimmedTime))
                     {
                         var schedule = new MedicationSchedule
@@ -100,11 +105,9 @@ namespace Medication_Tracker.Controllers
                             ScheduleTime = trimmedTime,
                             Notes = ""
                         };
-
                         _context.MedicationSchedules.Add(schedule);
                     }
                 }
-
                 _context.SaveChanges();
             }
 

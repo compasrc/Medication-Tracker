@@ -20,16 +20,34 @@
         <p class="error" style="margin-top: 12px;">@Model.ErrorMessage</p>
     }
 
-    @if (Model.SideEffects.Any())
+    @if (Model.Alerts.Any() || Model.SideEffects.Any() || Model.Interactions.Any() || Model.Contraindications.Any() || Model.UsageNotes.Any())
     {
         <hr />
-        <h3>Reported Side Effects for "@Model.MedicationName"</h3>
-        <ul>
-            @foreach (var effect in Model.SideEffects)
-            {
-                <li>@effect</li>
-            }
-        </ul>
+        <h3>Safety Information for "@Model.MedicationName"</h3>
+
+        @if (Model.Alerts.Any())
+        {
+            <h4>Critical Alerts</h4>
+            <ul>@foreach (var item in Model.Alerts) { <li>@item</li> }</ul>
+        }
+
+        @if (Model.SideEffects.Any())
+        {
+            <h4>Common Side Effects / Symptoms</h4>
+            <ul>@foreach (var item in Model.SideEffects) { <li>@item</li> }</ul>
+        }
+
+        @if (Model.Interactions.Any())
+        {
+            <h4>Interaction Warnings</h4>
+            <ul>@foreach (var item in Model.Interactions) { <li>@item</li> }</ul>
+        }
+
+        @if (Model.Contraindications.Any())
+        {
+            <h4>Who Should Avoid It</h4>
+            <ul>@foreach (var item in Model.Contraindications) { <li>@item</li> }</ul>
+        }
     }
 </div>
 
@@ -42,6 +60,7 @@
 
             let timer = null;
             let currentController = null;
+            const localCache = new Map();
 
             function clearSuggestions() {
                 box.innerHTML = '';
@@ -49,64 +68,38 @@
             }
 
             function renderSuggestions(items) {
-                if (!items || items.length === 0) {
-                    clearSuggestions();
-                    return;
-                }
-
+                if (!items || items.length === 0) return clearSuggestions();
                 box.innerHTML = '';
                 items.forEach(name => {
                     const row = document.createElement('div');
                     row.textContent = name;
                     row.style.padding = '8px 10px';
                     row.style.cursor = 'pointer';
-                    row.addEventListener('mouseenter', () => row.style.background = '#f5f5f5');
-                    row.addEventListener('mouseleave', () => row.style.background = 'white');
-                    row.addEventListener('click', () => {
-                        input.value = name;
-                        clearSuggestions();
-                    });
+                    row.onclick = () => { input.value = name; clearSuggestions(); };
                     box.appendChild(row);
                 });
-
                 box.style.display = 'block';
             }
 
             input.addEventListener('input', function () {
                 const q = input.value.trim();
+                if (q.length < 3) return clearSuggestions();
 
-                if (q.length < 3) {
-                    clearSuggestions();
-                    return;
-                }
+                const key = q.toLowerCase();
+                if (localCache.has(key)) return renderSuggestions(localCache.get(key));
 
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(async () => {
                     if (currentController) currentController.abort();
                     currentController = new AbortController();
-
                     try {
-                        const res = await fetch(`${endpoint}?term=${encodeURIComponent(q)}`, {
-                            signal: currentController.signal
-                        });
-
-                        if (!res.ok) {
-                            clearSuggestions();
-                            return;
-                        }
-
+                        const res = await fetch(`${endpoint}?term=${encodeURIComponent(q)}`, { signal: currentController.signal });
+                        if (!res.ok) return clearSuggestions();
                         const data = await res.json();
+                        localCache.set(key, data);
                         renderSuggestions(data);
-                    } catch {
-                        clearSuggestions();
-                    }
-                }, 350);
-            });
-
-            document.addEventListener('click', function (e) {
-                if (e.target !== input && !box.contains(e.target)) {
-                    clearSuggestions();
-                }
+                    } catch { clearSuggestions(); }
+                }, 180);
             });
         });
     </script>

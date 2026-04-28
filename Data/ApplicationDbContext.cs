@@ -34,13 +34,13 @@ namespace Medication_Tracker.Data
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
                 entity.HasIndex(e => e.Email).IsUnique();
 
-                entity.Property(e => e.Username)
+                entity.Property(e => e.Email)
                     .IsRequired()
                     .HasMaxLength(100);
 
-                entity.HasIndex(e => e.Username).IsUnique();
+                entity.HasIndex(e => e.Email).IsUnique();
 
-                entity.Property(e => e.Password)
+                entity.Property(e => e.PasswordHash)
                     .IsRequired();
 
                 entity.Property(e => e.PhoneNumber).HasMaxLength(20);

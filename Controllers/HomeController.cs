@@ -25,10 +25,9 @@ namespace Medication_Tracker.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            var currentUser = _context.Users
-                .FirstOrDefault(u => u.Username == username);
+			var currentUser = _context.Users.FirstOrDefault(u => u.Email == username);
 
-            if (currentUser == null)
+			if (currentUser == null)
             {
                 return RedirectToAction("Index", "Login");
             }
@@ -89,7 +88,7 @@ namespace Medication_Tracker.Controllers
             }
 
             var currentUser = _context.Users
-                .FirstOrDefault(u => u.Username == username);
+                .FirstOrDefault(u => u.Email == username);
 
             if (currentUser == null)
             {

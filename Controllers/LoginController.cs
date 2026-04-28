@@ -2,42 +2,65 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Client;
 using System.Diagnostics;
 using Medication_Tracker.Data;
+using Medication_Tracker.Models;
+using System.Runtime.CompilerServices;
 
 
 namespace Medication_Tracker.Controllers
 {
     public class LoginController : Controller
     {
-
-        public class HomeController : Controller
-        {
 			private readonly ApplicationDbContext context; //database context for accessing the database
-			public HomeController(ApplicationDbContext context)
+			
+            public LoginController(ApplicationDbContext context)
 			{
 				this.context = context;
 			}
-			public IActionResult LoginDashBoard()
+
+            public IActionResult Index()
+            {                
+                return View("Index");
+		    }
+		    public IActionResult LoginDashBoard()
             {
-                return View();
+                return View("Index");
             }
 
-			[HttpPost]
-            public async Task<IActionResult> Login(User user)
-            { 
-				if (ModelState.IsValid)
-                {
-                    if (!string.IsNullOrEmpty(user.Email) && !string.IsNullOrWhiteSpace(user.PasswordHash))
-                    {
-                        return RedirectToAction("Dashboard");
-                    }
-                    else
-                    {
-                        // If the login fails, add an error message to the model state
-                        ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    }
-                }
-                return View();
+        
+
+        [HttpPost]
+        public IActionResult Login(User user)
+        {
+            ModelState.Clear();
+
+            if (string.IsNullOrEmpty(user.Username) || string.IsNullOrWhiteSpace(user.Password))
+            {
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                return View("Index");
             }
+
+            var dbUser = context.Users.FirstOrDefault(u => u.Username == user.Username);
+            if (dbUser == null)
+            {
+                ModelState.AddModelError("", "User not found. Please try again.");
+                return View("Index");
+            }
+
+            //SECURITY: bypass for current accounts, but need 
+            if (string.IsNullOrEmpty(dbUser.PasswordHash))
+            {
+                return RedirectToAction("LoginDashBoard");
+            }
+
+			bool passwordValid = BCrypt.Net.BCrypt.Verify(user.Password, dbUser.PasswordHash);
+            if (!passwordValid)
+            {
+                ModelState.AddModelError("", "Invalid password. Please try again.");
+                return View("Index");
+            }
+
+            return RedirectToAction("Index", "Medication");
+        }
 
             public IActionResult Logout()
             {
@@ -55,5 +78,4 @@ namespace Medication_Tracker.Controllers
                 return RedirectToAction("SignUpUser", "SignUp");
             }
         }
-}
 }

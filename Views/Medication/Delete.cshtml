@@ -12,7 +12,7 @@
     <p><strong>@Model.Name</strong> - @Model.Dosage</p>
     <p>Frequency: @Model.Frequency</p>
 
-    <form asp-action="Delete" method="post">
+    <form asp-action="DeleteConfirmed" method="post">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
 

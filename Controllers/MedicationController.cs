@@ -16,7 +16,13 @@ namespace Medication_Tracker.Controllers
         {
             this.context = context;
         }
-        public IActionResult ViewAll()
+
+        public IActionResult Index()
+        {
+            var meds = context.Medications.ToList();
+			return View(meds);
+		}
+		public IActionResult ViewAll()
         {
             var medications = context.Medications.ToList();
             return View(medications);
@@ -28,27 +34,25 @@ namespace Medication_Tracker.Controllers
             return View(medication);
         }
 
-		public IActionResult Create(int id)
-		{
-			var medication = context.Medications.FirstOrDefault(m => m.Id == id); // Needs a method that retrieves a specific medication by its name from the database for deletion confirmation
-			if (medication == null)
-			{
-				return NotFound();
-			}
-			return View(medication);
-		}
-
+        public IActionResult Create()
+        {
+            return View();
+        }
 		
 		[HttpPost]
-        public async Task<IActionResult> Create(Medication Medication)
+        public IActionResult Create(Medication Medication)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                context.Medications.Add(Medication); 
-                await context.SaveChangesAsync(); 
-                return RedirectToAction("ViewAll");
-            }
-            return View(Medication);
+                ModelState.AddModelError("", "Invalid medication data. Please correct the errors and try again.");
+			    return View();
+			}
+            Medication.UserId = 1; 
+			context.Medications.Add(Medication);
+			context.SaveChanges();
+			return RedirectToAction("Index","Medication");
+            
+      
         }
 
 		public IActionResult Edit(int id)
@@ -68,16 +72,14 @@ namespace Medication_Tracker.Controllers
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    context.Entry(model).State = EntityState.Modified; 
-                    context.Update(model);
-                    await context.SaveChangesAsync(); 
-                }
-                catch (DbUpdateConcurrencyException) // need to update this
-                {
-                    return RedirectToAction("ViewAll");
-                }
+                var existingMedication = await context.Medications.FindAsync(model.Id);
+                if (existingMedication == null) {
+                    return NotFound();
+				}
+                model.UserId = existingMedication.UserId;
+                context.Entry(existingMedication).CurrentValues.SetValues(model);
+                await context.SaveChangesAsync();
+                return RedirectToAction("Index", "Medication");
 
             }
             return View(model);
@@ -85,12 +87,12 @@ namespace Medication_Tracker.Controllers
 
         public IActionResult Delete(int id)
         {
-            var medication = context.Medications.FirstOrDefault(m => m.Id == id); // Needs a method that retrieves a specific medication by its name from the database for deletion confirmation
+            var medication = context.Medications.FirstOrDefault(m => m.Id == id);
             if (medication == null)
             {
                 return NotFound();
-            }
-            return View(medication);
+			}
+			return View(medication);
         }
 
         [HttpPost]
@@ -98,14 +100,13 @@ namespace Medication_Tracker.Controllers
         public IActionResult DeleteConfirmed(int id)
         {
             var medication = context.Medications.FirstOrDefault(m => m.Id == id);
-            if (medication == null)
+			if (medication == null)
             {
                 return NotFound();
             }
-
             context.Medications.Remove(medication);
             context.SaveChanges();
-            return RedirectToAction("ViewAll");
+            return RedirectToAction("Index", "Medication");
 
         }
     }

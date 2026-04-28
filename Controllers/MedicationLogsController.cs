@@ -1,33 +1,23 @@
+using Medication_Tracker.Data;
+using Medication_Tracker.Models;
 using Microsoft.AspNetCore.Mvc;
+
 namespace Medication_Tracker.Controllers
 {
-    public class MedicationLogsController : Controller
-    {
-        public int ID {get; set;}
-        public int UserID {get; set;}
-        public int MedicationID {get; set;}
-        public int MedicationScheduleID {get; set;}
-        public DateTime TakenAt {get; set;}
-        public bool WasTaken {get; set;}
-        public string Notes {get; set;} = string.Empty;
-        public DateTime CreatedAt {get; set;}
-        public IActionResult Index()
-        {
-            return View();
-        }
+	public class MedicationLogsController : Controller
+	{
+		private readonly ApplicationDbContext context; //database context for accessing the database
 
-        public IActionResult Create()
-        {
-            return View();
-        }
+		public MedicationLogsController(ApplicationDbContext context)
+		{
+			this.context = context;
+		}
 
-        public IActionResult Edit()
-        {
-            return View();
-        }
-        protected IActionResult Delete()
-        {
-            return View();
-        }
-    }
+		public IActionResult Index()
+		{
+			var logs = context.MedicationLogs.ToList().Where(l => l.TakenAt.HasValue && l.TakenAt.Value.Date == DateTime.Today).ToList();
+			return View(logs);
+
+		}
+	}
 }

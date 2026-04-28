@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Medication_Tracker.Data;
 using Medication_Tracker.Models;
@@ -294,10 +296,10 @@ namespace Medication_Tracker.Controllers
             {
                 if (section.ValueKind == JsonValueKind.String)
                 {
-                    var text = section.GetString();
-                    if (!string.IsNullOrWhiteSpace(text))
+                    var cleaned = CleanOpenFdaText(section.GetString());
+                    if (!string.IsNullOrWhiteSpace(cleaned))
                     {
-                        values.Add(text.Trim());
+                        values.Add(cleaned);
                     }
                 }
             }
@@ -316,13 +318,27 @@ namespace Medication_Tracker.Controllers
             {
                 if (name.ValueKind == JsonValueKind.String)
                 {
-                    var value = name.GetString();
-                    if (!string.IsNullOrWhiteSpace(value))
+                    var cleaned = CleanOpenFdaText(name.GetString());
+                    if (!string.IsNullOrWhiteSpace(cleaned))
                     {
-                        output.Add(value.Trim());
+                        output.Add(cleaned);
                     }
                 }
             }
+        }
+
+        private static string CleanOpenFdaText(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return string.Empty;
+            }
+
+            var decoded = WebUtility.HtmlDecode(input);
+            var withLineBreaks = Regex.Replace(decoded, @"<\s*br\s*/?\s*>", " ", RegexOptions.IgnoreCase);
+            var noTags = Regex.Replace(withLineBreaks, "<.*?>", " ");
+            var normalized = Regex.Replace(noTags, @"\s+", " ").Trim();
+            return normalized;
         }
     }
 }

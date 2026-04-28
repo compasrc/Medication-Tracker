@@ -82,7 +82,7 @@ namespace Medication_Tracker.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create(Medication Medication)
+        public IActionResult Create(Medication Medication, string? TimeToTake, string? Times)
         {
             if (!ModelState.IsValid)
             {
@@ -96,9 +96,49 @@ namespace Medication_Tracker.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
+            Medication.Description ??= string.Empty;
+            Medication.TimeToTake = string.IsNullOrWhiteSpace(TimeToTake) ? null : TimeToTake.Trim();
             Medication.UserId = userId.Value;
+
             context.Medications.Add(Medication);
             context.SaveChanges();
+
+            var scheduleTimes = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(TimeToTake))
+            {
+                scheduleTimes.Add(TimeToTake.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(Times))
+            {
+                scheduleTimes.AddRange(
+                    Times.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                         .Select(t => t.Trim())
+                         .Where(t => !string.IsNullOrWhiteSpace(t)));
+            }
+
+            var distinctTimes = scheduleTimes
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (distinctTimes.Any())
+            {
+                var schedules = distinctTimes.Select(t => new MedicationSchedule
+                {
+                    UserId = userId.Value,
+                    MedicationId = Medication.Id,
+                    ScheduleTime = t,
+                    StartDate = DateTime.Today,
+                    IsActive = true,
+                    Notes = Medication.Description,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                context.MedicationSchedules.AddRange(schedules);
+                context.SaveChanges();
+            }
+
             return RedirectToAction("Index", "Medication");
         }
 
@@ -123,6 +163,7 @@ namespace Medication_Tracker.Controllers
                 {
                     return NotFound();
                 }
+                model.Description ??= string.Empty;
                 model.UserId = existingMedication.UserId;
                 context.Entry(existingMedication).CurrentValues.SetValues(model);
                 await context.SaveChangesAsync();

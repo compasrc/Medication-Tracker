@@ -1,81 +1,83 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Identity.Client;
-using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 using Medication_Tracker.Data;
 using Medication_Tracker.Models;
-using System.Runtime.CompilerServices;
-
+using System.Linq;
 
 namespace Medication_Tracker.Controllers
 {
     public class LoginController : Controller
     {
-			private readonly ApplicationDbContext context; //database context for accessing the database
-			
-            public LoginController(ApplicationDbContext context)
-			{
-				this.context = context;
-			}
+        private readonly ApplicationDbContext context;
 
-            public IActionResult Index()
-            {                
-                return View("Index");
-		    }
-		    public IActionResult LoginDashBoard()
-            {
-                return View("Index");
-            }
+        public LoginController(ApplicationDbContext context)
+        {
+            this.context = context;
+        }
 
-        
+        public IActionResult Index()
+        {
+            return View("Index");
+        }
 
         [HttpPost]
-        public IActionResult Login(User user)
+        public IActionResult Index(User user)
         {
             ModelState.Clear();
 
-            if (string.IsNullOrEmpty(user.Username) || string.IsNullOrWhiteSpace(user.Password))
+            if (string.IsNullOrWhiteSpace(user.Username) || string.IsNullOrWhiteSpace(user.Password))
             {
                 ModelState.AddModelError(string.Empty, "Invalid login attempt.");
                 return View("Index");
             }
 
-            var dbUser = context.Users.FirstOrDefault(u => u.Username == user.Username);
+            var loginInput = user.Username.Trim();
+
+            var dbUser = context.Users
+                .AsNoTracking()
+                .Where(u => u.Username == loginInput || u.Email == loginInput)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Username,
+                    u.Email,
+                    u.Password,
+                    u.PasswordHash
+                })
+                .FirstOrDefault();
+
             if (dbUser == null)
             {
                 ModelState.AddModelError("", "User not found. Please try again.");
                 return View("Index");
             }
 
-            //SECURITY: bypass for current accounts, but need 
-            if (string.IsNullOrEmpty(dbUser.PasswordHash))
+            bool passwordValid = false;
+
+            if (!string.IsNullOrEmpty(dbUser.PasswordHash))
             {
-                return RedirectToAction("LoginDashBoard");
+                passwordValid = BCrypt.Net.BCrypt.Verify(user.Password, dbUser.PasswordHash);
+            }
+            else if (!string.IsNullOrEmpty(dbUser.Password))
+            {
+                passwordValid = dbUser.Password == user.Password;
             }
 
-			bool passwordValid = BCrypt.Net.BCrypt.Verify(user.Password, dbUser.PasswordHash);
             if (!passwordValid)
             {
                 ModelState.AddModelError("", "Invalid password. Please try again.");
                 return View("Index");
             }
 
-            return RedirectToAction("Index", "Medication");
+            HttpContext.Session.SetString("User", dbUser.Username ?? dbUser.Email);
+            HttpContext.Session.SetInt32("UserId", dbUser.Id);
+            return RedirectToAction("Index", "Home");
         }
 
-            public IActionResult Logout()
-            {
-                return RedirectToAction("LoginDashBoard", "Login"); // Redirect to the login page
-			}
-
-            public IActionResult PasswordRecoveryControl(Medication User, string Email)
-            {
-                var user = context.Users.FirstOrDefault(u => u.Email == Email);
-			    return RedirectToAction("PasswordRecovery", "PasswordRecovery");
-			}
-
-			public IActionResult NotSignedUp()
-            {
-                return RedirectToAction("SignUpUser", "SignUp");
-            }
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Index", "Login");
         }
+    }
 }

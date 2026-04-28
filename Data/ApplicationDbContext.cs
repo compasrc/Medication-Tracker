@@ -31,19 +31,24 @@ namespace Medication_Tracker.Data
                 entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
 
-                entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
-                entity.HasIndex(e => e.Email).IsUnique();
-
                 entity.Property(e => e.Email)
                     .IsRequired()
                     .HasMaxLength(100);
-
                 entity.HasIndex(e => e.Email).IsUnique();
 
-                entity.Property(e => e.PasswordHash)
-                    .IsRequired();
+                entity.Property(e => e.Username)
+                    .HasMaxLength(100)
+                    .IsRequired(false);
 
-                entity.Property(e => e.PhoneNumber).HasMaxLength(20);
+                entity.Property(e => e.Password)
+                    .IsRequired(false);
+
+                entity.Property(e => e.PasswordHash)
+                    .IsRequired(false);
+
+                entity.Property(e => e.PhoneNumber)
+                    .HasMaxLength(20)
+                    .IsRequired(false);
             });
 
             // Configure Medication entity

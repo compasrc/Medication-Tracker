@@ -18,16 +18,14 @@ namespace Medication_Tracker.Controllers
 
         public IActionResult Index()
         {
-            var username = HttpContext.Session.GetString("User");
-
-            if (string.IsNullOrEmpty(username))
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (!userId.HasValue)
             {
                 return RedirectToAction("Index", "Login");
             }
 
-			var currentUser = _context.Users.FirstOrDefault(u => u.Email == username);
-
-			if (currentUser == null)
+            var currentUser = _context.Users.FirstOrDefault(u => u.Id == userId.Value);
+            if (currentUser == null)
             {
                 return RedirectToAction("Index", "Login");
             }
@@ -80,16 +78,13 @@ namespace Medication_Tracker.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult LogMedication(int medicationId, int scheduleId, string status)
         {
-            var username = HttpContext.Session.GetString("User");
-
-            if (string.IsNullOrEmpty(username))
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (!userId.HasValue)
             {
                 return RedirectToAction("Index", "Login");
             }
 
-            var currentUser = _context.Users
-                .FirstOrDefault(u => u.Email == username);
-
+            var currentUser = _context.Users.FirstOrDefault(u => u.Id == userId.Value);
             if (currentUser == null)
             {
                 return RedirectToAction("Index", "Login");

@@ -20,10 +20,16 @@ namespace Medication_Tracker.Models
         [EmailAddress]
         [StringLength(255)]
         public string Email { get; set; } = string.Empty;
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public string PasswordHash { get; set; } = string.Empty;
-		public string PhoneNumber { get; set; } = string.Empty;
+
+        [StringLength(100)]
+        public string? Username { get; set; }
+
+        public string? Password { get; set; }
+
+        public string? PasswordHash { get; set; }
+
+        [StringLength(20)]
+        public string? PhoneNumber { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

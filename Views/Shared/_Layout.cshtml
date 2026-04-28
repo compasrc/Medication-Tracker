@@ -11,38 +11,34 @@
 
 <body>
 
+    @using Microsoft.AspNetCore.Http
+
+@{
+        var username = Context.Session.GetString("User");
+        var firstName = Context.Session.GetString("FirstName");
+    }
+
     <header class="main-header">
         <div class="container nav-wrapper">
 
-            <!-- LOGO -->
             <a class="logo" asp-controller="Home" asp-action="Index">MedTracker</a>
 
-            @using Microsoft.AspNetCore.Http
-
-<!-- NAVIGATION -->
-<nav class="main-nav">
-
-                @if (Context.Session.GetString("User") != null)
+            <nav class="main-nav">
+                @if (!string.IsNullOrEmpty(username))
                 {
                     <div class="nav-right">
 
                         <span class="welcome-text">
-                            Welcome, @Context.Session.GetString("User")
+                            Welcome, @(firstName ?? username)
                         </span>
 
                         <a asp-controller="Home" asp-action="Index">Home</a>
 
-                        <a asp-controller="Medication" asp-action="Index">
-                            Medications
-                        </a>
+                        <a asp-controller="Medication" asp-action="Index">Medications</a>
 
-                        <a asp-controller="Medication" asp-action="Create">
-                            Add Medication
-                        </a>
+                        <a asp-controller="Medication" asp-action="Create">Add Medication</a>
 
-                        <a asp-controller="Medication" asp-action="SideEffects">
-                            Side Effects
-                        </a>
+                        <a asp-controller="Medication" asp-action="SideEffects">Side Effects</a>
 
                         <a class="logout-btn"
                                asp-controller="Login"
@@ -70,18 +66,15 @@
 
                     </div>
                 }
-
             </nav>
 
         </div>
     </header>
 
-    <!-- PAGE CONTENT -->
     <main class="container page-section">
         @RenderBody()
     </main>
 
-    <!-- SCRIPTS -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 

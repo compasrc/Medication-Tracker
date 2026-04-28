@@ -34,16 +34,17 @@ namespace Medication_Tracker.Controllers
             var loginInput = user.Username.Trim();
 
             var dbUser = context.Users
-                .AsNoTracking()
-                .Where(u => u.Username == loginInput || u.Email == loginInput)
-                .Select(u => new
-                {
-                    u.Id,
-                    u.Username,
-                    u.Email,
-                    u.Password,
-                    u.PasswordHash
-                })
+              .AsNoTracking()
+              .Where(u => u.Username == loginInput || u.Email == loginInput)
+              .Select(u => new
+              {
+                        u.Id,
+                        u.Username,
+                        u.Email,
+                        u.FirstName,
+                        u.Password,
+                        u.PasswordHash
+                    })
                 .FirstOrDefault();
 
             if (dbUser == null)
@@ -69,9 +70,11 @@ namespace Medication_Tracker.Controllers
                 return View("Index");
             }
 
-            HttpContext.Session.SetString("User", dbUser.Username ?? dbUser.Email);
+            HttpContext.Session.SetString("User", dbUser.Username ?? "User");
+            HttpContext.Session.SetString("FirstName", dbUser.FirstName ?? dbUser.Username ?? "User");
             HttpContext.Session.SetInt32("UserId", dbUser.Id);
-            return RedirectToAction("Index", "Home");
+
+            return RedirectToAction("Index", "Home"); 
         }
 
         public IActionResult Logout()

@@ -30,31 +30,50 @@
     {
         var nextMedication = medications
             .FirstOrDefault(m => nextSchedule != null && m.Id == nextSchedule.MedicationId);
+      
 
-        <!-- STATS -->
-        <div class="dashboard-stats">
+            <!-- STATS -->
+<div class="dashboard-stats">
 
-            <a asp-controller="Medication" asp-action="Index" class="stat-card clickable-card">
-                <h2>@ViewBag.TotalMedications</h2>
-                <p>Total Medications</p>
-            </a>
+    <a asp-controller="Medication" asp-action="Index" class="stat-card clickable-card">
+        <h2>@ViewBag.TotalMedications</h2>
+        <p>Total Medications</p>
+    </a>
 
-            <div class="stat-card">
-                <h2>@ViewBag.TakenCount</h2>
-                <p>Taken Today</p>
+    <div class="stat-card">
+        <h2>@ViewBag.TakenCount</h2>
+        <p>Taken Today</p>
+    </div>
+
+    <div class="stat-card">
+        <h2>@ViewBag.MissedCount</h2>
+        <p>Not Taken</p>
+    </div>
+
+    <div class="stat-card">
+        <h2>@ViewBag.RemainingCount</h2>
+        <p>Remaining</p>
+    </div>
+
+</div>
+    <div class="adherence-row">
+            <div class="adherence-feature-card">
+
+                <div>
+                    <h2>@ViewBag.AdherenceRate%</h2>
+                    <p>Medication Adherence</p>
+                    <small>@ViewBag.TotalTaken taken / @ViewBag.TotalMissed missed</small>
+                </div>
+
+                <div class="adherence-progress-area">
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width:@(ViewBag.AdherenceRate)%"></div>
+                    </div>
+                    <span>Keep tracking your doses to improve your adherence score.</span>
+                </div>
+
             </div>
-
-            <div class="stat-card">
-                <h2>@ViewBag.MissedCount</h2>
-                <p>Not Taken</p>
-            </div>
-
-            <div class="stat-card">
-                <h2>@ViewBag.RemainingCount</h2>
-                <p>Remaining</p>
-            </div>
-
-        </div>
+        </div> 
 
         <!-- MAIN GRID -->
         <div class="dashboard-grid">
@@ -153,6 +172,8 @@
                     <p>No schedule found.</p>
                 }
             </div>
+
+          
 
         </div>
 

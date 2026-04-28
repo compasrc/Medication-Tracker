@@ -44,6 +44,10 @@ namespace Medication_Tracker.Controllers
                             l.TakenAt.Value.Date == DateTime.Today)
                 .ToList();
 
+            var allLogs = _context.MedicationLogs
+                .Where(l => l.UserId == currentUser.Id)
+                .ToList();
+
             var now = DateTime.Now.TimeOfDay;
 
             var upcomingSchedules = schedules
@@ -56,8 +60,17 @@ namespace Medication_Tracker.Controllers
                 .FirstOrDefault(s => TimeSpan.Parse(s.ScheduleTime) >= now)
                 ?? upcomingSchedules.FirstOrDefault();
 
+            int totalTaken = allLogs.Count(l => l.WasTaken);
+            int totalMissed = allLogs.Count(l => !l.WasTaken);
+            int totalLogged = totalTaken + totalMissed;
+
+            double adherenceRate = totalLogged > 0
+                ? (double)totalTaken / totalLogged * 100
+                : 0;
+
             ViewBag.Medications = medications;
             ViewBag.ScheduleTimes = schedules;
+
             ViewBag.TodaySchedules = schedules
                 .Where(s => TimeSpan.TryParse(s.ScheduleTime, out _))
                 .OrderBy(s => TimeSpan.Parse(s.ScheduleTime))
@@ -71,8 +84,14 @@ namespace Medication_Tracker.Controllers
             ViewBag.RemainingCount = upcomingSchedules.Count;
             ViewBag.NextSchedule = nextSchedule;
 
+            ViewBag.TotalTaken = totalTaken;
+            ViewBag.TotalMissed = totalMissed;
+            ViewBag.AdherenceRate = Math.Round(adherenceRate);
+
             return View();
         }
+
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
